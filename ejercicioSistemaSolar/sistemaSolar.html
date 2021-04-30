@@ -419,20 +419,21 @@
             // Apolo
 
             m3=mat4.create();
-            m3=mat4.clone(m2); // con respecto a la luna
+            m3=mat4.clone(m2);
 
+            mat4.rotate(m3,m3,Math.PI/4,[0,0,1]); // rotacion para orientar la nave
             mat4.translate(m3,m3,[2,0,0]); // traslacion para ubicar la nave en la superficie lunar
             mat4.rotate(m3,m3,Math.PI/2,[0,0,-1]); // rotacion para orientar la nave
                
-            // ISS 
-            
-	    m4=mat4.create();
-            m4=mat4.clone(m1); // con respecto a la Tierra
+            // ISS
+
+            m4=mat4.create();
+            m4=mat4.clone(m1);
             
             mat4.rotate(m4,m4,24*tiempo,[0,0,1]); // rotacion con respecto a la tierra || dos vueltas a la tierra por cada vuelta de la luna a la tierra
             mat4.translate(m4,m4,[15,0,0]); // separacion con respecto a la tierra || mitad de la distancia de la luna a la tierra
-            mat4.rotate(m4,m4,Math.PI/2,[0,1,0]); // rotacion para direccionar las aspas en direccion a la tierra
-            mat4.rotate(m4,m4,Math.PI/4,[-1,0,0]); // rotacion para direccionar las aspas en direccion a la tierra
+            mat4.rotate(m4,m4,Math.PI/2,[0,1,0]); // rotacion para direccionar los paneles en direccion a la tierra
+            mat4.rotate(m4,m4,Math.PI/4,[-1,0,0]); // rotacion para direccionar los paneles en direccion a la tierra
  
             // Tierra
 
