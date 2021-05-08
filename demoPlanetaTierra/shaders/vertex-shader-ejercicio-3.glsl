@@ -42,7 +42,22 @@
             // **************** EDITAR A PARTIR DE AQUI *******************************
             
 
-            // position *= log(tan(PI/4.0+uv.y/2.0));
+            float phi = 0.0;
+
+            if (position.z == 0.0)
+            {
+                phi = sign(position.x)*PI/2.0;
+            }
+
+            else
+            {
+                phi = atan(position.x, position.z);
+            }
+
+            float R = 0.8;
+
+            position.x = R * cos(phi);
+            position.z = -R * sin(phi);
 
 
             // ************************************************************************
