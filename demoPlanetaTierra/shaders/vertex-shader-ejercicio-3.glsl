@@ -41,24 +41,12 @@
             
             // **************** EDITAR A PARTIR DE AQUI *******************************
             
+            position.x = 1.5 * cos(uv.x * 2.0 * PI);
+            position.z = 1.5 * sin(uv.x * 2.0 * PI);
+            position.y = 6.0 * uv.y;
 
-            float phi = 0.0;
-
-            if (position.z == 0.0)
-            {
-                phi = sign(position.x)*PI/2.0;
-            }
-
-            else
-            {
-                phi = atan(position.x, position.z);
-            }
-
-            float R = 0.8;
-
-            position.x = R * cos(phi);
-            position.z = -R * sin(phi);
-
+            position *= 0.3;
+            position.y -= 1.0;
 
             // ************************************************************************
 
