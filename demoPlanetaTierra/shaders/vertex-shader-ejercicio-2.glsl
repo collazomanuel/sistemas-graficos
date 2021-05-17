@@ -45,11 +45,10 @@
             position.x = uv.x - cos(PI * uv.x / 2.0);
             position.z = uv.y - cos(PI * uv.y / 2.0);
             position.y = 0.0 - 0.5;
-            
-            float freq = sqrt(((uv.x-0.5)*(uv.x-0.5))+((uv.y-0.5)*(uv.y-0.5)));
-            float amp = 0.1;
-            float angle = -time*1.0+freq*6.0;
-            position.y += sin(angle)*amp;
+
+            float r = sqrt((position.x)*(position.x)+(position.z)*(position.z));
+
+            position.y += 0.2 * cos(-time*30.0+r*30.0) / exp(5.0*r);
             
             
             // ************************************************************************
