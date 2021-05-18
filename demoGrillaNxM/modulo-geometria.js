@@ -32,7 +32,8 @@ var mallaDeTriangulos;
 var filas=30;
 var columnas=50;
 
-var figura="plano"; // plano, esfera o tubo senoidal
+// var figura="plano"; // plano, esfera o tubo senoidal
+// se utiliza la declaracion en el script del HTML
 
 
 function crearGeometria(){
