@@ -45,7 +45,7 @@ class Object3D {
         this.scale = vec3.fromValues(1,1,1); // default: (1,1,1)
 	}
 
-    draw(parentMatrix) {
+    draw(parentMatrix = mat4.create()) {
 
 		var m = mat4.create();
 
@@ -93,6 +93,38 @@ class Object3D {
         vec3.set(this.scale, x, y, z);
         this.updateModelMatrix();
 	}
+}
+
+class Tile extends Object3D {
+
+    constructor(tileForm) {
+
+        super(10,10); // rows and columns makes no effect
+
+        this.color = vec4.fromValues(0.0,0.0,0.0,1.0);
+
+        this.sweptSurface = null;
+
+        this.tileForm = tileForm;
+
+        this.initializeObject();
+    }
+
+    initializeObject() {
+
+        var tileSweep = new StraightLine();
+        tileSweep.setControlPoints([0,0,0], [0,0.2,0]);
+
+        var tileDeltaForm = 0.01;
+        var tileDeltaSweep = 0.5;
+
+        this.sweptSurface = new SweptSurface(this.tileForm, tileSweep, tileDeltaForm, tileDeltaSweep);
+
+        // los 3 buffers ok
+        // index??
+
+        this.triangleStripMesh = this.sweptSurface.setupBuffers();
+    }
 }
 
 class Square extends Object3D {

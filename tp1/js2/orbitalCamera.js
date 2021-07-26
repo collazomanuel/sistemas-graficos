@@ -14,7 +14,6 @@ function OrbitalCameraControl(initialPos){
 
     let radius = 60;
 
-
     let orbitalCamViewMatrix = mat4.create();
     
     let eyePosition = initialPos;

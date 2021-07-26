@@ -97,3 +97,168 @@ function ChooseCamera() {
         
     }
 }
+
+function getRandomDouble(min, max) {
+        
+    if(min > max) {
+        console.log("Error: min > max");
+        return;
+    }
+    
+    var range = max - min;
+    
+    return min + range * Math.random();
+}
+
+function getControlPoints(numWindowsA, numWindowsB, windowSize) {
+
+    var randomDelta; // between -0.5 and 1
+    
+    var controlPoints = [];
+
+    for (let a = -numWindowsA/2; a < numWindowsA/2; a++) {
+        
+        var point = vec2.fromValues(a*windowSize,numWindowsB*windowSize/2);
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+
+    for (let b = numWindowsB/2; b > -numWindowsB/2; b--) {
+        
+        var point = vec2.fromValues(numWindowsA*windowSize/2,b*windowSize);
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    for (let a = numWindowsA/2; a > -numWindowsA/2; a--) {
+        
+        var point = vec2.fromValues(a*windowSize,-numWindowsB*windowSize/2);
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    for (let b = -numWindowsB/2; b < numWindowsB/2; b++) {
+        
+        var point = vec2.fromValues(-numWindowsA*windowSize/2,b*windowSize);
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+        
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    return controlPoints;
+}
+
+function getControlPointsRandom(numWindowsA, numWindowsB, windowSize) {
+    
+    var controlPoints = [];
+
+    var cornerDelta = 1.0;
+    var minRandomDelta = 1.0;
+    var maxRandomDelta = 1.5;
+
+    for (let a = -numWindowsA/2; a < numWindowsA/2; a++) {
+        
+        var point = vec2.fromValues(a*windowSize,numWindowsB*windowSize/2);
+        
+        // not modifying the rectangle vertices
+        if(a != -numWindowsA/2) {
+
+            var randomDelta = getRandomDouble(minRandomDelta,maxRandomDelta);
+            vec2.add(point, point, vec2.fromValues(0,randomDelta * windowSize));
+        
+        } else {
+
+            vec2.add(point, point, vec2.fromValues(-cornerDelta,cornerDelta));
+        }
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    for (let b = numWindowsB/2; b > -numWindowsB/2; b--) {
+        
+        var point = vec2.fromValues(numWindowsA*windowSize/2,b*windowSize);
+        
+        // not modifying the rectangle vertices
+        if(b != numWindowsB/2) {
+
+            var randomDelta = getRandomDouble(minRandomDelta,maxRandomDelta);
+            vec2.add(point, point, vec2.fromValues(randomDelta * windowSize,0));
+        
+        } else {
+
+            vec2.add(point, point, vec2.fromValues(cornerDelta,cornerDelta));
+        }
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    for (let a = numWindowsA/2; a > -numWindowsA/2; a--) {
+        
+        var point = vec2.fromValues(a*windowSize,-numWindowsB*windowSize/2);
+        
+        // not modifying the rectangle vertices
+        if(a != numWindowsA/2) {
+
+            var randomDelta = getRandomDouble(minRandomDelta,maxRandomDelta);
+            vec2.add(point, point, vec2.fromValues(0,-randomDelta * windowSize));
+        
+        } else {
+
+            vec2.add(point, point, vec2.fromValues(cornerDelta,-cornerDelta));
+        }
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    for (let b = -numWindowsB/2; b < numWindowsB/2; b++) {
+        
+        var point = vec2.fromValues(-numWindowsA*windowSize/2,b*windowSize);
+        
+        // not modifying the rectangle vertices
+        if(b != -numWindowsB/2) {
+
+            var randomDelta = getRandomDouble(minRandomDelta,maxRandomDelta);
+            vec2.add(point, point, vec2.fromValues(-randomDelta * windowSize,0));
+        
+        }  else {
+
+            vec2.add(point, point, vec2.fromValues(-cornerDelta,-cornerDelta));
+        }
+
+        vec2.add(point, point, vec2.fromValues(0,0));
+        
+        var point3D = [point[0],0,point[1]];
+        
+        controlPoints.push(point3D);
+    }
+
+    return controlPoints;
+}
