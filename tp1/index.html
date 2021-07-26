@@ -2,7 +2,6 @@
 <html>
     <head>
         <title>TP1 - Manuel Collazo</title>
-        <link rel="shortcut icon" href="favicon.ico">
         <style>
             body{ background-color: grey; }
             canvas{ background-color: white; }
@@ -12,14 +11,45 @@
     <body>
 
     	<center>    		            
-            	<canvas id="my-canvas" width="1000" height="800">
-            		Your browser does not support the HTML5 canvas element.
+            <canvas id="my-canvas" width="1000" height="800">
+            	Your browser does not support the HTML5 canvas element.
     		</canvas>
-		<div width="1000" style="line-height: 0.8; font-size:13px">
-                	<p><b>⦋ Change Camera ⦌ ⇉ </b> drone: 1 - crane operator: 2 - orbital: 3</p>
-                	<p><b>⦋ Drone Camera ⦌ ⇉ </b> forward:🡡 - backward:🡣 - left:🡠 - right:🡢 - up: 8 - down: 5 - rotate: 4,6 - reset:r - stop:t</p>
-                	<p><b>⦋ Crane ⦌ ⇉ </b> lift/drop cabin: q,a - rotate cabin: j,l - rotate arm: i,k - lift/drop cable: w,s</p>
-           	 </div>
+            
+            <div>
+                windowsA:  4 <input id="slide1" type="range"
+                min="4" max="12" step="1" value="8" />
+                12
+            </div>
+
+            <div>
+                windowsB:  4 <input id="slide2" type="range"
+                min="4" max="12" step="1" value="8" />
+                12
+            </div>
+
+            <div>
+                floors first section:  1 <input id="slide3" type="range"
+                min="1" max="10" step="1" value="5" />
+                10
+            </div>
+
+            <div>
+                floors second section:  1 <input id="slide4" type="range"
+                min="1" max="10" step="1" value="5" />
+                10
+            </div>
+
+            <div>
+                columns:  4 <input id="slide5" type="range"
+                min="4" max="20" step="1" value="10" />
+                20
+            </div>
+            
+            <div width="1000" style="line-height: 0.8; font-size:13px">
+                <p><b>⦋ Change Camera ⦌ ⇉ </b> drone: 1 - crane operator: 2 - orbital: 3</p>
+                <p><b>⦋ Drone Camera ⦌ ⇉ </b> forward:🡡 - backward:🡣 - left:🡠 - right:🡢 - up: 8 - down: 5 - rotate: 4,6 - reset:r - stop:t</p>
+                <p><b>⦋ Crane ⦌ ⇉ </b> lift/drop cabin: q,a - rotate cabin: j,l - rotate arm: i,k - lift/drop cable: w,s</p>
+            </div>
     	</center>
 
         <script src="js/gl-matrix.js"></script>
@@ -31,6 +61,13 @@
         <script src="js2/droneCamera.js"></script>
         <script src="js2/orbitalCamera.js"></script>
         <script src="js2/craneControls.js"></script>
+        <script src="js2/buildingControls.js"></script>
+        <script src="js2/building.js"></script>
+        <script src="js2/sweep.js"></script>
+        <script src="js2/sweptSurfaces.js"></script>
+        <script src="js2/slide.js"></script>
+
+        <script src="js2/slideObject.js"></script>
         
         <!-- Vertex Shader -->
         
@@ -76,7 +113,9 @@
                 //vec3 diffColor=mix(vec3(0.7,0.7,0.7),vNormal,0.4);
                 //vec3 color=dot(lightVec,vNormal)*diffColor+vec3(0.2,0.2,0.2);
 
-                gl_FragColor = vec4(color);
+
+                gl_FragColor = vec4(mix(color.xyz,vNormal,0.5),1.0);
+                //gl_FragColor = vec4(color);
             }
 
         </script>
@@ -85,6 +124,7 @@
         
         <script>
 
+            var vec2=glMatrix.vec2; // 2D vector
             var vec3=glMatrix.vec3; // 3D vector
             var vec4=glMatrix.vec4; // 4D vector
             var mat3=glMatrix.mat3; // 3x3 matrix
@@ -172,13 +212,19 @@
 
             //==========================================
 
-            var cranePosition = [-5,0,10];
+            var cranePosition = [-20,0,40];
 
             //==========================================
 
             // objects in scene
             // crane, building, floor, sky, sun (?)
             let objects = [];
+
+            let building = null;
+
+            let slide = null;
+
+            //===================
 
             let orbitalCam = null;
             let droneCam = null;
@@ -214,9 +260,20 @@
                     chooseCamera = new ChooseCamera();
                     initShaders();
                     createObjects();
+
+                    // =====================================
+                    // test building
+
+                    building = new Building();
+                    
+                    slide = new SlideObject(20,2,5,vec4.fromValues(0.5,0.1,0.9,1.0));
+
+                    // =====================================
+
                     setupVertexShaderMatrix();
                     setupFragmentShaderMatrix();
-                    setupCraneControls();                   
+                    setupCraneControls();
+                    setupBuildingControls();                   
                     tick();   
 
                 }else{    
@@ -301,8 +358,12 @@
 
             function setupCraneControls() {
 
-                craneControls = new CraneControls();
-                
+                craneControls = new CraneControls();   
+            }
+
+            function setupBuildingControls() {
+
+                buildingControls = new BuildingControls();   
             }
 
             function setupOrbitalCamera() {
@@ -334,8 +395,8 @@
             function createObjects() {
 
                 // rows and columns for the creation of meshes for the surfaces
-                var rows = 10;
-                var columns = 20;
+                var rows = 5;
+                var columns = 10;
 
                 // floor
                 var floorWidth = 150;
@@ -579,11 +640,15 @@
                     
                     objects[index].draw(mat4.create());
                 }
+
+                building.draw();
+                slide.draw();
             }
             
             function tick(){
     
                 craneControls.update();
+                buildingControls.update();
                 chooseCamera.toggle();
                 orbitalCam.update();
                 droneCam.update();
