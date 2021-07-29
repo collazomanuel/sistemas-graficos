@@ -203,47 +203,38 @@ class QuadraticBezier extends Sweep {
 	}
 
 	getB0(u) {
-
 		return (1-u)*(1-u);
 	}
 
 	getB1(u) {
-
 		return 2*(1-u)*u;
 	}
 
 	getB2(u) {
-
 		return u*u;
 	}
 
 	getDB0(u) {
-
 		return -2*(1-u);
 	}
 
 	getDB1(u) {
-
 		return 2*(1-2*u);
 	}
 
 	getDB2(u) {
-
 		return 2*u;
 	}
 
 	getDDB0(u) {
-
 		return 2;
 	}
 
 	getDDB1(u) {
-		
 		return -4;
 	}
 
 	getDDB2(u) {
-
 		return 2;		
 	}
 
@@ -291,21 +282,27 @@ class QuadraticBezier extends Sweep {
 		vec3.scale(p1, p1, db1);
 		vec3.scale(p2, p2, db2);
 
-		var vector = vec3.create();
+		var tangentVector = vec3.create();
 
-		vec3.add(vector, p0, p1);
-		vec3.add(vector, vector, p2);
+		vec3.add(tangentVector, p0, p1);
+		vec3.add(tangentVector, tangentVector, p2);
 
-		vec3.normalize(vector, vector);
+		vec3.normalize(tangentVector, tangentVector);
 
-		return vector; // vec3
+		return tangentVector; // vec3
 	}
 
 	getNormalVectorAt(u) {
 
 		var secondDerivativeVector = this.getSecondDerivativeVectorAt(u);
+		var tangentVector = this.getTangentVectorAt(u);
 
-		return secondDerivativeVector;
+		var normalVector = vec3.create();
+
+		vec3.cross(normalVector, tangentVector, secondDerivativeVector);
+		vec3.normalize(normalVector, normalVector);
+
+		return normalVector; // vec3
 	}
 
 	getSecondDerivativeVectorAt(u) {
@@ -333,7 +330,11 @@ class QuadraticBezier extends Sweep {
 
 		vec3.normalize(secondDerivativeVector, secondDerivativeVector);
 
-		return secondDerivativeVector; // vec3
+		// HARDCODEO
+
+		return vec3.fromValues(0.0,1.0,0.0);
+
+		//return secondDerivativeVector; // vec3
 	}
 
 	getBinormalVectorAt(u) {
@@ -743,6 +744,7 @@ class QuadraticBSpline extends Sweep {
 class multipleQuadraticBezier extends Sweep {
 
 	constructor(){
+		
 		super();
 		this.curves = [];
 	}
@@ -754,68 +756,84 @@ class multipleQuadraticBezier extends Sweep {
 	}
 
 	initializeCurve(){
-		//Create all bezier curves of the route
-		var cps = this.controlPoints;
-		for(let i = 0; i < cps.length-1;i+=2){
+		
+		// create Bezier curves
+
+		for(let i = 0; i < this.controlPoints.length-1; i+=2){
+			
 			var newCurve = new QuadraticBezier();
-			newCurve.setControlPoints(cps[i],cps[i+1],cps[i+2]);
+			newCurve.setControlPoints(this.controlPoints[i],this.controlPoints[i+1],this.controlPoints[i+2]);
 			this.curves.push(newCurve);		
 		}
-
-
 	}
 
 	getPositionVectorAt(u){
-		// 6 Curvas -> t = [0,6]		
+		
+		// u between 0 and 1	
+		// t = [curve.(t%1)]	
 		var t = u*this.curves.length; //Si, por ejemplo, u = 0.2, t = 1.2
-		var curveNum = (t-(t%1)); // curva 1
+		// t%1 between 0 and 1
+		var curveNum = (t-(t%1));
 
 		if(curveNum == 6) {
 
 			curveNum = 5;
+			t = 5.99999999;
 		}
 		
-		return this.curves[curveNum].getPositionVectorAt(t%1);//Punto en 0.2 de la curva 1 
+		return (this.curves[curveNum]).getPositionVectorAt(t%1);
 	}
 
 	getTangentVectorAt(u){
-		var t = u*this.curves.length; 
-		var curveNum = (t-(t%1)); 
+		
+		// u between 0 and 1	
+		// t = [curve.(t%1)]	
+		var t = u*this.curves.length; //Si, por ejemplo, u = 0.2, t = 1.2
+		// t%1 between 0 and 1
+		var curveNum = (t-(t%1));
 
 		if(curveNum == 6) {
 
 			curveNum = 5;
+			t = 5.99999999;
 		}
 
-		return this.curves[curveNum].getTangentVectorAt(t%1);
+		return (this.curves[curveNum]).getTangentVectorAt(t%1);
 	}
 
 	getNormalVectorAt(u){
-		var t = u*this.curves.length; 
+		
+		// u between 0 and 1	
+		// t = [curve.(t%1)]	
+		var t = u*this.curves.length; //Si, por ejemplo, u = 0.2, t = 1.2
+		// t%1 between 0 and 1
 		var curveNum = (t-(t%1)); 
 
 		if(curveNum == 6) {
 
 			curveNum = 5;
+			t = 5.99999999;
 		}
 
-		return this.curves[curveNum].getBinormalVectorAt(t%1);
+		return (this.curves[curveNum]).getNormalVectorAt(t%1);
 	}
 	
 	getBinormalVectorAt(u){
-		var t = u*this.curves.length; 
-		var curveNum = (t-(t%1)); 
+		
+		// u between 0 and 1	
+		// t = [curve.(t%1)]	
+		var t = u*this.curves.length; //Si, por ejemplo, u = 0.2, t = 1.2
+		// t%1 between 0 and 1
+		var curveNum = (t-(t%1));
 
 		if(curveNum == 6) {
 
 			curveNum = 5;
+			t = 5.99999999;
 		}
 
-		return this.curves[curveNum].getNormalVectorAt(t%1);
+		return (this.curves[curveNum]).getBinormalVectorAt(t%1);
 	}
-
-
-
 }
 
 
@@ -843,7 +861,8 @@ class ClosedQuadraticBSpline extends Sweep {
 		this.controlPoints = [];
 
 		for (var i = 0; i < points.length; i++) {
-		  this.controlPoints.push(points[i]);
+		  
+			this.controlPoints.push(points[i]);
 		}
 	}
 
@@ -860,12 +879,11 @@ class ClosedQuadraticBSpline extends Sweep {
 	getPositionVectorAt(u) {
 		
 		// u between 0 and 1
-
 		u*=(this.controlPoints).length;
 
 		// use all control points in order and then add p0 and p1
 
-		// curva 0, curva 1, curva 2, etc
+		// curve 0, curve 1, curve 2, etc
 		var curveNum = (u-(u%1));
 
 		if(curveNum > (this.controlPoints).length) {
@@ -896,11 +914,11 @@ class ClosedQuadraticBSpline extends Sweep {
 	getTangentVectorAt(u) {
 
 		// u between 0 and 1
-
 		u*=(this.controlPoints).length;
 
 		// use all control points in order and then add p0 and p1
 
+		// curve 0, curve 1, curve 2, etc
 		var curveNum = (u-(u%1));
 
 		if(curveNum > (this.controlPoints).length) {
@@ -936,6 +954,7 @@ class ClosedQuadraticBSpline extends Sweep {
 
 		// use all control points in order and then add p0 and p1
 
+		// curve 0, curve 1, curve 2, etc
 		var curveNum = (u-(u%1));
 
 		if(curveNum > (this.controlPoints).length) {
@@ -971,6 +990,7 @@ class ClosedQuadraticBSpline extends Sweep {
 
 		// use all control points in order and then add p0 and p1
 
+		// curve 0, curve 1, curve 2, etc
 		var curveNum = (u-(u%1));
 
 		if(curveNum > (this.controlPoints).length) {

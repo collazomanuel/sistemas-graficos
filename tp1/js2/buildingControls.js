@@ -5,9 +5,7 @@ function BuildingControls(){
     let slider3Value = 5;
     let slider4Value = 5;
     let slider5Value = 10;
-    
-    // keypress events ------------------------------------------------------------
-    
+        
     document.getElementById( "slide1" ).onchange = function(){
         slider1Value = parseInt(this.value, 10);
     };
@@ -37,4 +35,3 @@ function BuildingControls(){
         building.setNumColumns(slider5Value);
     }        
 }
-

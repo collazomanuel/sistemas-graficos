@@ -5,7 +5,7 @@ function CraneControls(){
     let DELTA_ARM_ROTATION = Math.PI/64;
     let DELTA_CABLE_EXTENSION = 1;
     
-    let craneInitialState={
+    let craneInitialState = {
         
         platformHeight:initialPlatformHeight,
         cabinRotation:initialCabinRotation,
@@ -28,8 +28,6 @@ function CraneControls(){
     let maxCableExtension = 115;
 
     let craneState = Object.assign({},craneInitialState);
-
-    // keypress events ------------------------------------------------------------
 
     document.addEventListener("keypress",function(e){
             
@@ -105,13 +103,15 @@ function CraneControls(){
         craneState.armRotation=craneState.targetArmRotation;
         craneState.cableExtension+=craneState.targetCableExtension;
 
-        //
         cabinRotation = craneState.cabinRotation;
 
         if(craneState.platformHeight < 1) {
+            
             modifHeightPiezaB = craneState.targetPlatformHeight;
             modifHeightPiezaC = 0;
+
         } else {
+
             modifHeightPiezaB = 0;
             modifHeightPiezaC = craneState.targetPlatformHeight;
         }
@@ -123,8 +123,6 @@ function CraneControls(){
         craneState.targetCabinRotation=0;
         craneState.targetArmRotation=0;
         craneState.targetCableExtension=0;
-
-        
 
         updateCraneKeyEvents(
 

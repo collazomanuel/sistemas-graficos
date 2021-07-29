@@ -144,7 +144,7 @@ class Building {
 
         this.firstSectionFloor.addChildren(windows);
 
-        // agregar columnas
+        // add columns
 
         var deltaCurve = 1/this.numColumns;
         var deltaNormal = 1.0;
@@ -233,7 +233,7 @@ class Building {
 
         this.secondSectionFloor.addChildren(windows);
 
-        // agregar columnas
+        // add columns
 
         var deltaCurve = 1/this.numColumns;
         var deltaNormal = 1.0;
@@ -269,10 +269,6 @@ class Building {
 
             var position = vec3.create();
             var normal = vec3.create();
-
-            //console.log("curvePosition: " + curvePosition);
-            //console.log("curveNormal: " + curveNormal);
-            //console.log("curveTangent: " + curveTangent);
             
             vec3.scale(normal, curveNormal, deltaNormal);
             vec3.add(position, curvePosition, normal);

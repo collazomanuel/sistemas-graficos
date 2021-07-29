@@ -111,8 +111,6 @@ function getRandomDouble(min, max) {
 }
 
 function getControlPoints(numWindowsA, numWindowsB, windowSize) {
-
-    var randomDelta; // between -0.5 and 1
     
     var controlPoints = [];
 
@@ -170,7 +168,7 @@ function getControlPointsRandom(numWindowsA, numWindowsB, windowSize) {
 
     var cornerDelta = 1.0;
     var minRandomDelta = 1.0;
-    var maxRandomDelta = 1.5;
+    var maxRandomDelta = 2.0;
 
     for (let a = -numWindowsA/2; a < numWindowsA/2; a++) {
         

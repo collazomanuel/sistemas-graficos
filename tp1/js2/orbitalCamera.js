@@ -12,7 +12,7 @@ function OrbitalCameraControl(initialPos){
     let move = {x: 2, y: 1};
     let prevClient = {x: 0, y: 0}
 
-    let radius = 60;
+    let radius = 70;
 
     let orbitalCamViewMatrix = mat4.create();
     
@@ -20,6 +20,7 @@ function OrbitalCameraControl(initialPos){
     let targetPosition = [0, 5, 0];
 
     document.addEventListener("mousemove", function(e) {
+        
         mousePosition.x = e.clientX; 
 	    mousePosition.y = e.clientY;
     });

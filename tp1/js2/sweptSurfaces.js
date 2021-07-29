@@ -1,7 +1,7 @@
 
 class SweptSurface {
 
-    // form circle, anything in 2D
+    // form circle, curve, anything in 2D
     
     // sweep: curve, straight line (extrusion), anything that has the methods: 
     //      getPositionVectorAt();
@@ -16,11 +16,12 @@ class SweptSurface {
         this.uvBuffer = [];
         this.indexBuffer = [];
 
-        this.form = form; // 2D
+        this.form = form; // "2D" (y = 0)
         this.sweep = sweep; // 3D
 
         this.deltaForm = deltaForm;
         this.deltaSweep = deltaSweep;
+        
         this.levels = 1/deltaSweep;
         
         // positions, tangents, binormals, normals
@@ -38,7 +39,7 @@ class SweptSurface {
         var binormal = this.sweep.getBinormalVectorAt(u);
         var normal = this.sweep.getNormalVectorAt(u);
 
-        // HARDCODEO (sacar)
+        // HARDCODING
         //var normal = vec3.fromValues(1,0,0);
         //var tangent = vec3.fromValues(0,1,0);
         //var binormal = vec3.fromValues(0,0,1);
@@ -54,6 +55,24 @@ class SweptSurface {
         mat4.transpose(levelMatrix, levelMatrix);
 
         return levelMatrix;
+    }
+
+    addSurfaceVertices() {
+    }
+
+    generateIndexBuffer() {
+    }
+
+    setupBuffers() {
+    }
+}
+
+
+class TileSurface extends SweptSurface {
+
+    constructor(form, sweep, deltaForm, deltaSweep) {
+
+        super(form, sweep, deltaForm, deltaSweep);
     }
 
     addSurfaceVertices() {
@@ -138,7 +157,6 @@ class SweptSurface {
 
         // bottom lid
 
-
         for (let i = 0; i < verticesPerLevel; i++) {
             
             this.indexBuffer.push(bottomLidIndex);
@@ -172,6 +190,110 @@ class SweptSurface {
         this.addSurfaceVertices();
         this.addBottomLidVertex();
         this.addTopLidVertex();
+        this.generateIndexBuffer();
+
+        var webgl_position_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, webgl_position_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.positionBuffer), gl.STATIC_DRAW);
+        webgl_position_buffer.itemSize = 3;
+        webgl_position_buffer.numItems = this.positionBuffer.length / 3;
+    
+        var webgl_normal_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, webgl_normal_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.normalBuffer), gl.STATIC_DRAW);
+        webgl_normal_buffer.itemSize = 3;
+        webgl_normal_buffer.numItems = this.normalBuffer.length / 3;
+    
+        var webgl_uvs_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, webgl_uvs_buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.uvBuffer), gl.STATIC_DRAW);
+        webgl_uvs_buffer.itemSize = 2;
+        webgl_uvs_buffer.numItems = this.uvBuffer.length / 2;
+    
+        var webgl_index_buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, webgl_index_buffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indexBuffer), gl.STATIC_DRAW);
+        webgl_index_buffer.itemSize = 1;
+        webgl_index_buffer.numItems = this.indexBuffer.length;
+
+        return {
+            webgl_position_buffer,
+            webgl_normal_buffer,
+            webgl_uvs_buffer,
+            webgl_index_buffer
+        }
+    }
+}
+
+class SlideSurface extends SweptSurface {
+
+    constructor(form, sweep, deltaForm, deltaSweep) {
+
+        super(form, sweep, deltaForm, deltaSweep);
+    }
+
+    addSurfaceVertices() {
+
+        var verticesPerLevel = this.perimeter.positions.length - 1;
+        
+        for (let i = 0; i < this.levels; i++) {
+
+            var levelMatrix = this.getLevelMatrix(i);
+            
+            for (let j = 0; j < verticesPerLevel; j++) {
+
+                var position3D = vec3.clone(this.perimeter.positions[j]);
+                var normal3D = vec3.clone(this.perimeter.normals[j]);
+
+                var uv = vec2.fromValues(0,0);
+
+                var position4D = vec4.fromValues(position3D[0], position3D[1], position3D[2], 1.0);
+                var normal4D = vec4.fromValues(normal3D[0], normal3D[1], normal3D[2], 1.0);
+
+                vec4.transformMat4(position4D, position4D, levelMatrix);
+                vec4.transformMat4(normal4D, normal4D, levelMatrix);
+
+                position3D = vec3.fromValues(position4D[0], position4D[1], position4D[2]);
+                normal3D = vec3.fromValues(normal4D[0], normal4D[1], normal4D[2]);
+                
+                this.positionBuffer.push(position3D[0]);
+                this.positionBuffer.push(position3D[1]);
+                this.positionBuffer.push(position3D[2]);
+                this.normalBuffer.push(normal3D[0]);
+                this.normalBuffer.push(normal3D[1]);
+                this.normalBuffer.push(normal3D[2]);
+                this.uvBuffer.push(uv[0]);
+                this.uvBuffer.push(uv[1]);
+            }
+        }
+    }
+
+    generateIndexBuffer() {
+
+        var verticesPerLevel = this.perimeter.positions.length - 1;
+
+        for (let level = 0; level < this.levels; level+=2) {
+            
+            for (let point = 0; point < verticesPerLevel; point++) {
+                
+                this.indexBuffer.push((((level+0)*verticesPerLevel)+point));
+                this.indexBuffer.push((((level+1)*verticesPerLevel)+point));
+            }
+
+            if(level < this.levels - 2) {
+
+                for (let point = verticesPerLevel-1; point >= 0; point--) {
+
+                    this.indexBuffer.push((((level+1)*verticesPerLevel)+point));
+                    this.indexBuffer.push((((level+2)*verticesPerLevel)+point));
+                }
+            }
+        }        
+    }
+
+    setupBuffers() {
+
+        this.addSurfaceVertices();
         this.generateIndexBuffer();
 
         var webgl_position_buffer = gl.createBuffer();

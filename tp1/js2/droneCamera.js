@@ -1,7 +1,7 @@
 
     function DroneCameraControl(initialPos){
 
-        let DELTA_TRASLACION=0.1;        
+        let DELTA_TRASLACION=0.10;        
         let DELTA_ROTACION=0.02;        
         let FACTOR_INERCIA=0.05;
 
@@ -164,12 +164,12 @@
 
             let m=mat4.clone(worldMatrix);            
             mat4.invert(m,m);
+            
             return m;
         }
 
         this.getMatrix=function(){
 
             return worldMatrix;
-
         }
     }

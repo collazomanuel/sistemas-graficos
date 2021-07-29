@@ -118,10 +118,7 @@ class Tile extends Object3D {
         var tileDeltaForm = 0.01;
         var tileDeltaSweep = 0.5;
 
-        this.sweptSurface = new SweptSurface(this.tileForm, tileSweep, tileDeltaForm, tileDeltaSweep);
-
-        // los 3 buffers ok
-        // index??
+        this.sweptSurface = new TileSurface(this.tileForm, tileSweep, tileDeltaForm, tileDeltaSweep);
 
         this.triangleStripMesh = this.sweptSurface.setupBuffers();
     }
@@ -285,5 +282,49 @@ class Cylinder extends Object3D {
         circuloInferior.setScale(1,-1,1);
         circuloInferior.setTranslation(0,this.height/2,0);
         this.addChildren(circuloInferior);
+    }
+}
+
+class Axis extends Object3D {
+
+    constructor(color = vec4.fromValues(0.0,0.0,1.0,1.0), direction) {
+
+        super(10, 10);
+
+        this.direction = direction;
+        this.color = color;
+
+        this.initializeObject();
+    }
+
+    initializeObject() {
+
+        this.triangleStripMesh = null;
+
+        var x = this.direction[0];
+        var y = this.direction[1];
+        var z = this.direction[2];
+
+        var line = new StraightLine();
+
+        line.setControlPoints([0,0,0], [x,y,z]);
+
+        var discretizedLine = discretizeCurve(line, 0.005);    
+
+        var cube0 = new Cube(2, 2, 0.01, this.color);
+        cube0.setTranslation(discretizedLine.positions[0][0],discretizedLine.positions[0][1],discretizedLine.positions[0][2]);
+        this.addChildren(cube0);
+
+        var cube1 = new Cube(2, 2, 0.01, this.color);
+        cube1.setTranslation(discretizedLine.positions[1][0],discretizedLine.positions[1][1],discretizedLine.positions[1][2]);
+        this.addChildren(cube1);
+
+        var cube2 = new Cube(2, 2, 0.01, this.color);
+        cube2.setTranslation(discretizedLine.positions[2][0],discretizedLine.positions[2][1],discretizedLine.positions[2][2]);
+        this.addChildren(cube2);
+
+        var cube3 = new Cube(2, 2, 0.01, this.color);
+        cube3.setTranslation(discretizedLine.positions[3][0],discretizedLine.positions[3][1],discretizedLine.positions[3][2]);
+        this.addChildren(cube3);
     }
 }
