@@ -44,6 +44,12 @@
                 min="4" max="20" step="1" value="10" />
                 20
             </div>
+
+            <div>
+                slide levels:  1 <input id="slide6" type="range"
+                min="1" max="10" step="1" value="5" />
+                10
+            </div>
             
             <div width="1000" style="line-height: 0.8; font-size:13px">
                 <p><b>⦋ Change Camera ⦌ ⇉ </b> drone: 1 - crane operator: 2 - orbital: 3</p>
@@ -66,9 +72,8 @@
         <script src="js2/sweep.js"></script>
         <script src="js2/sweptSurfaces.js"></script>
         <script src="js2/slide.js"></script>
+        <script src="js2/slideControls.js"></script>
 
-        <script src="js2/slideObject.js"></script>
-        
         <!-- Vertex Shader -->
         
         <script id="shader-vs" type="x-shader/x-vertex">
@@ -113,9 +118,8 @@
                 //vec3 diffColor=mix(vec3(0.7,0.7,0.7),vNormal,0.4);
                 //vec3 color=dot(lightVec,vNormal)*diffColor+vec3(0.2,0.2,0.2);
 
-
-                gl_FragColor = vec4(mix(color.xyz,vNormal,0.5),1.0);
-                //gl_FragColor = vec4(color);
+                //gl_FragColor = vec4(mix(color.xyz,vNormal,0.5),1.0);
+                gl_FragColor = vec4(color);
             }
 
         </script>
@@ -212,16 +216,15 @@
 
             //==========================================
 
-            var cranePosition = [-20,0,40];
+            var cranePosition = [28,0,6];
 
             //==========================================
 
             // objects in scene
-            // crane, building, floor, sky, sun (?)
+            // crane, floor, sky, sun (?)
             let objects = [];
 
             let building = null;
-
             let slide = null;
 
             //===================
@@ -260,20 +263,11 @@
                     chooseCamera = new ChooseCamera();
                     initShaders();
                     createObjects();
-
-                    // =====================================
-                    // test building
-
-                    building = new Building();
-                    
-                    slide = new SlideObject(20,2,5,vec4.fromValues(0.5,0.1,0.9,1.0));
-
-                    // =====================================
-
                     setupVertexShaderMatrix();
                     setupFragmentShaderMatrix();
                     setupCraneControls();
-                    setupBuildingControls();                   
+                    setupBuildingControls();
+                    setupSlideControls();                   
                     tick();   
 
                 }else{    
@@ -366,6 +360,11 @@
                 buildingControls = new BuildingControls();   
             }
 
+            function setupSlideControls() {
+
+                slideControls = new SlideControls();   
+            }
+
             function setupOrbitalCamera() {
 
                 orbitalCam = new OrbitalCameraControl([0,0,0]);
@@ -373,7 +372,7 @@
 
             function setupDroneCamera() {
 
-                droneCam = new DroneCameraControl([0,15,25]);
+                droneCam = new DroneCameraControl([18,5,35]);
             }
 
             function setupCraneOperatorCamera() {
@@ -399,20 +398,20 @@
                 var columns = 10;
 
                 // floor
-                var floorWidth = 150;
+                var floorWidth = 200;
                 var floorColor = vec4.fromValues(0.335,0.488,0.273,1.0);
                 var floor = new Square(rows,columns,floorWidth,floorColor);
 
                 // sky
-                var skySphereRadius = 70;
+                var skySphereRadius = 80;
                 var skyColor = vec4.fromValues(0.678,0.847,0.902,1.0);
                 var sky = new Sphere(rows,columns,skySphereRadius,skyColor);
 
                 // 2001 monolith
                 var monilithWidth = 2;
                 var monolithColor = vec4.fromValues(0.05,0.05,0.05,1);
-                var monolith = new Cube(rows, columns, monilithWidth,monolithColor);
-                monolith.setTranslation(40,0,10);
+                var monolith = new Cube(rows, columns, monilithWidth, monolithColor);
+                monolith.setTranslation(-40,0,-20);
                 monolith.setScale(1,10,2);
                
                 // crane
@@ -630,6 +629,10 @@
                 objects.push(crane);
                 objects.push(sky);
                 objects.push(monolith);
+
+                building = new Building();
+                
+                slide = new Slide(5,3,vec4.fromValues(0.90,0.90,0.0,1.0),5); // (height,width,color,levels)
             }
 
             function drawScene(){
@@ -649,6 +652,7 @@
     
                 craneControls.update();
                 buildingControls.update();
+                slideControls.update();
                 chooseCamera.toggle();
                 orbitalCam.update();
                 droneCam.update();
