@@ -2,76 +2,106 @@
 <html>
     <head>
         <title>TP2 - Manuel Collazo</title>
+        <link rel="stylesheet" href="style.css">
         <link rel="shortcut icon" href="#">
         <style>
-            body{ background-color: grey; }
-            canvas{ background-color: white; }
+            body{ background-color: rgb(185, 182, 128); }
+            canvas{ background-color: rgb(255, 255, 255); }
 			textarea{ background-color: black; color: white;}
         </style>
     </head>
     <body>
 
-    	<center>
+        <div class="parent">
             
-            <!-- Canvas -->
-            <canvas id="my-canvas" width="800" height="600">
-            	Your browser does not support the HTML5 canvas element.
-    		</canvas>
-            
-            <!-- Sliders -->
-            <div>
+            <div class="div1">
 
-                <div>
-                    windowsA:  4 <input id="slide1" type="range"
-                    min="4" max="12" step="1" value="8" />
-                    12
-                </div>
-    
-                <div>
-                    windowsB:  4 <input id="slide2" type="range"
-                    min="4" max="12" step="1" value="8" />
-                    12
-                </div>
-    
-                <div>
-                    floors first section:  1 <input id="slide3" type="range"
-                    min="1" max="10" step="1" value="5" />
-                    10
-                </div>
-    
-                <div>
-                    floors second section:  1 <input id="slide4" type="range"
-                    min="1" max="10" step="1" value="5" />
-                    10
-                </div>
-    
-                <div>
-                    columns:  4 <input id="slide5" type="range"
-                    min="4" max="20" step="1" value="10" />
-                    20
-                </div>
-    
-                <div>
-                    slide levels:  1 <input id="slide6" type="range"
-                    min="1" max="10" step="1" value="5" />
-                    10
-                </div>
+                <br>
+                <!-- Canvas -->
+                <canvas id="my-canvas" width="1000" height="800">
+                    Your browser does not support the HTML5 canvas element.
+                </canvas>
+                <br><br>
 
             </div>
 
-            <!-- Controls -->
-            <div width="1000" style="line-height: 0.8; font-size:13px">
-                <p><b>⦋ Change Camera ⦌ ⇉ </b> drone: 1 - crane operator: 2 - orbital: 3</p>
-                <p><b>⦋ Drone Camera ⦌ ⇉ </b> forward:🡡 - backward:🡣 - left:🡠 - right:🡢 - up: 8 - down: 5 - rotate: 4,6 - reset:r - stop:t</p>
-                <p><b>⦋ Crane ⦌ ⇉ </b> lift/drop cabin: q,a - rotate cabin: j,l - rotate arm: i,k - lift/drop cable: w,s</p>
+            <div class="div2">
+
+                <br><br><br><br><br>
+
+                <!-- Controls -->
+                <div style="line-height: 0.8; font-size:15px">
+                    <h4>⦋ Change Camera ⦌</h4>
+                    <p>drone: 1 - crane operator: 2 - orbital: 3</p>
+                    <h4>⦋ Drone Camera ⦌</h4>
+                    <p>forward:🡡 - backward:🡣 - left:🡠 - right:🡢 - up: 8 - down: 5 - rotate: 4,6 - reset:r - stop:t</p>
+                    <h4>⦋ Crane ⦌</h4>
+                    <p>lift/drop cabin: q,a - rotate cabin: j,l - rotate arm: i,k - lift/drop cable: w,s</p>
+                </div>
+
+                <br><br><br>
+
+                <!-- Sliders -->
+                <div>
+                    <div>
+                        windowsA:  4 <input id="slide1" type="range"
+                        min="4" max="12" step="1" value="8" />
+                        12
+                    </div>
+
+                    <br>
+        
+                    <div>
+                        windowsB:  4 <input id="slide2" type="range"
+                        min="4" max="12" step="1" value="8" />
+                        12
+                    </div>
+
+                    <br>
+        
+                    <div>
+                        floors first section:  1 <input id="slide3" type="range"
+                        min="1" max="10" step="1" value="5" />
+                        10
+                    </div>
+
+                    <br>
+        
+                    <div>
+                        floors second section:  1 <input id="slide4" type="range"
+                        min="1" max="10" step="1" value="5" />
+                        10
+                    </div>
+
+                    <br>
+        
+                    <div>
+                        columns:  4 <input id="slide5" type="range"
+                        min="4" max="20" step="1" value="10" />
+                        20
+                    </div>
+
+                    <br>
+        
+                    <div>
+                        slide levels:  1 <input id="slide6" type="range"
+                        min="1" max="10" step="1" value="5" />
+                        10
+                    </div>
+                </div>
+
+                <br><br><br><br><br><br><br>
+
+                <audio controls autoplay>
+                    <source src="ambiance.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+
             </div>
 
-            <audio controls autoplay>
-                <source src="ambiance.mp3" type="audio/mpeg">
-                Your browser does not support the audio element.
-            </audio> 
+        </div> 
 
-    	</center>
+
 
         <script src="js/gl-matrix.js"></script>
 
