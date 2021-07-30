@@ -1,0 +1,736 @@
+<!doctype html>
+<html>
+    <head>
+        <title>TP1 - Manuel Collazo</title>
+        <style>
+            body{ background-color: grey; }
+            canvas{ background-color: white; }
+			textarea{ background-color: black; color: white;}
+        </style>
+    </head>
+    <body>
+
+    	<center>
+            
+            <!-- Canvas -->
+            <canvas id="my-canvas" width="800" height="600">
+            	Your browser does not support the HTML5 canvas element.
+    		</canvas>
+            
+            <!-- Sliders -->
+            <div>
+
+                <div>
+                    windowsA:  4 <input id="slide1" type="range"
+                    min="4" max="12" step="1" value="8" />
+                    12
+                </div>
+    
+                <div>
+                    windowsB:  4 <input id="slide2" type="range"
+                    min="4" max="12" step="1" value="8" />
+                    12
+                </div>
+    
+                <div>
+                    floors first section:  1 <input id="slide3" type="range"
+                    min="1" max="10" step="1" value="5" />
+                    10
+                </div>
+    
+                <div>
+                    floors second section:  1 <input id="slide4" type="range"
+                    min="1" max="10" step="1" value="5" />
+                    10
+                </div>
+    
+                <div>
+                    columns:  4 <input id="slide5" type="range"
+                    min="4" max="20" step="1" value="10" />
+                    20
+                </div>
+    
+                <div>
+                    slide levels:  1 <input id="slide6" type="range"
+                    min="1" max="10" step="1" value="5" />
+                    10
+                </div>
+
+            </div>
+
+            <!-- Controls -->
+            <div width="1000" style="line-height: 0.8; font-size:13px">
+                <p><b>⦋ Change Camera ⦌ ⇉ </b> drone: 1 - crane operator: 2 - orbital: 3</p>
+                <p><b>⦋ Drone Camera ⦌ ⇉ </b> forward:🡡 - backward:🡣 - left:🡠 - right:🡢 - up: 8 - down: 5 - rotate: 4,6 - reset:r - stop:t</p>
+                <p><b>⦋ Crane ⦌ ⇉ </b> lift/drop cabin: q,a - rotate cabin: j,l - rotate arm: i,k - lift/drop cable: w,s</p>
+            </div>
+
+    	</center>
+
+        <script src="js/gl-matrix.js"></script>
+
+        <script src="js2/object3D.js"></script>
+        <script src="js2/surfaces.js"></script>
+        <script src="js2/utils.js"></script>
+        <script src="js2/craneOperatorCamera.js"></script>
+        <script src="js2/droneCamera.js"></script>
+        <script src="js2/orbitalCamera.js"></script>
+        <script src="js2/craneControls.js"></script>
+        <script src="js2/buildingControls.js"></script>
+        <script src="js2/building.js"></script>
+        <script src="js2/sweep.js"></script>
+        <script src="js2/sweptSurfaces.js"></script>
+        <script src="js2/slide.js"></script>
+        <script src="js2/slideControls.js"></script>
+
+        <!-- Vertex Shader -->
+        
+        <script id="shader-vs" type="x-shader/x-vertex">
+
+            precision highp float;
+
+            attribute vec3 aVertexPosition;
+            attribute vec3 aVertexNormal;
+            attribute vec2 aVertexUv; // aTextureCoordinate
+
+            uniform mat4 modelMatrix;            
+            uniform mat4 viewMatrix;
+            uniform mat4 projMatrix;
+            uniform mat4 normalMatrix;
+
+            varying vec3 vPosWorld; 
+            varying vec3 vNormal;
+            varying vec3 vColor;
+            varying vec2 vUv; // vTextureCoordinate
+            
+            void main(void) {
+
+                vPosWorld=(modelMatrix*vec4(aVertexPosition,1.0)).xyz; // position in world coordinates
+                vNormal=(normalMatrix*vec4(aVertexNormal,1.0)).xyz; // normal in world coordinates
+                
+                gl_Position = projMatrix * viewMatrix * vec4(vPosWorld, 1.0);
+
+                vUv = aVertexUv; // pass the texture coordinate to the fragment shader
+            }
+
+        </script>
+
+        <!-- Fragment Shader -->
+
+        <script id="shader-fs" type="x-shader/x-fragment">
+            
+            precision highp float;
+
+            uniform vec4 color;
+            uniform sampler2D uSampler; // uTexture
+            
+            varying vec3 vPosWorld;
+            varying vec3 vNormal;
+            varying vec2 vUv;
+            
+            void main(void) {
+
+                //vec3 lightVec=normalize(vec3(0.0,3.0,5.0)-vPosWorld);
+                //vec3 diffColor=mix(vec3(0.7,0.7,0.7),vNormal,0.4);
+                //vec3 color=dot(lightVec,vNormal)*diffColor+vec3(0.2,0.2,0.2);
+
+                //gl_FragColor = vec4(mix(color.xyz,vNormal,0.5),1.0);
+                
+                // gl_FragColor = vec4(color);
+
+                if((color[0] == 1.0) && (color[1] == 1.0) && (color[2] == 1.0)) {
+
+                    gl_FragColor = texture2D(uSampler, vUv);
+                
+                } else {
+
+                    gl_FragColor = vec4(color);
+                }                
+            }
+
+        </script>
+
+        <!-- WebGL -->
+        
+        <script>
+
+            var vec2=glMatrix.vec2; // 2D vector
+            var vec3=glMatrix.vec3; // 3D vector
+            var vec4=glMatrix.vec4; // 4D vector
+            var mat3=glMatrix.mat3; // 3x3 matrix
+            var mat4=glMatrix.mat4; // 4x4 matrix
+
+            var gl = null;
+            var canvas = null;
+
+            var vertexShader = null;
+            var fragmentShader = null;
+
+            //==========================================
+
+            var modelMatrixUniform = null;
+            var viewMatrixUniform = null;
+            var projMatrixUniform = null;
+            var normalMatrixUniform = null;
+
+            var vertexPositionAttribute = null;
+            var vertexNormalAttribute = null;
+            var textureCoordAttribute = null;
+
+            var colorUniform = null;
+
+            var uSamplerUniform = null;
+
+            //==========================================
+
+            var trianglesVerticeBuffer = null;
+            var trianglesNormalBuffer = null;
+            // var trianglesUvBuffer = null;
+            var trianglesIndexBuffer = null;
+
+            glProgram = null;
+
+            //==========================================
+            
+            var initialModelMatrix = mat4.create();
+            var initialColor = vec4.fromValues(1.0,1.0,1.0,1.0);
+            var initialNormalMatrix = mat4.create();
+
+            var viewMatrix = mat4.create();
+            var projMatrix = mat4.create();
+
+           //==========================================
+            
+            var vPosWorld = null;
+            var vNormal = null;
+            
+            //==========================================
+
+            // key press variables
+
+            //==========================================
+
+            var initialPlatformHeight = 1.5; // initial height (modifHeightPiezaB + modifHeightPiezaC) between 0 and 2
+            var initialCabinRotation = 0; // initial angle
+            var initialArmRotation = 0.0; // initial angle
+            var initialCableExtension = 40; // initial extension
+
+            var modifHeightPiezaB = 1; // between 0 and 1
+            var modifHeightPiezaC = 0.5; // between 0 and 1
+
+            var cabinRotation = initialCabinRotation;
+            var armRotation = initialArmRotation;
+            var cableExtension = initialCableExtension;
+
+            var totalArmRotation = initialArmRotation;
+
+            var prevCableExtension;
+
+            var piezaARef;
+            var piezaBRef;
+            var piezaCRef;
+            var piezaDRef;
+            var piezaERef;
+            var piezaFRef;
+            var piezaGRef;
+            var piezaHRef;
+            var cable1Ref;
+            var cable2Ref;
+            var cable3Ref;
+            var cable4Ref;
+            var trolleyCableRef;
+            var armRef;
+
+            var cabinHeight;
+
+            //==========================================
+
+            var cranePosition = [28,0,6];
+
+            //==========================================
+
+            // objects in scene
+            // crane, floor, sky, sun (?)
+            let objects = [];
+
+            let building = null;
+            let slide = null;
+
+            //===================
+
+            let orbitalCam = null;
+            let droneCam = null;
+            let craneOperatorCam = null;
+            let currentCam = null;
+            let craneControls = null;
+
+            //===================
+
+            let textures = new Map();
+
+            //===================
+            
+            // WebGL Initialization
+         
+            function initWebGL(){
+
+                canvas = document.getElementById("my-canvas");  
+
+                try{
+                    
+                    gl = canvas.getContext("webgl");      
+
+                }catch(e){
+                    
+                    alert("Error: Your browser does not appear to support WebGL.");
+                }
+
+                if(gl) {
+
+                    setupWebGL();
+                    setupMatrices();
+                    setupOrbitalCamera();
+                    setupDroneCamera();
+                    setupCraneOperatorCamera();
+                    currentCam = "drone"; // default
+                    chooseCamera = new ChooseCamera();
+                    initShaders();
+                    createObjects();
+                    setupVertexShaderMatrix();
+                    setupFragmentShaderMatrix();
+                    setupCraneControls();
+                    setupBuildingControls();
+                    setupSlideControls();                   
+                    tick();   
+
+                }else{    
+                    
+                    alert("Error: Your browser does not appear to support WebGL.");
+                }
+            }
+
+            function setupWebGL(){
+                
+                gl.enable(gl.DEPTH_TEST);
+                
+                // set the clear color
+                gl.clearColor(0.1, 0.1, 0.2, 1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);     
+    
+                // set the viewport
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+                    
+            function initShaders() {
+                
+                // get shader source
+                var fs_source = document.getElementById('shader-fs').innerHTML;
+                var vs_source = document.getElementById('shader-vs').innerHTML;
+
+                // compile shaders
+                vertexShader = makeShader(vs_source, gl.VERTEX_SHADER);
+                fragmentShader = makeShader(fs_source, gl.FRAGMENT_SHADER);
+                
+                // create program
+                glProgram = gl.createProgram();
+                
+                // attach and link shaders to the program
+                gl.attachShader(glProgram, vertexShader);
+                gl.attachShader(glProgram, fragmentShader);
+                gl.linkProgram(glProgram);
+
+                if (!gl.getProgramParameter(glProgram, gl.LINK_STATUS)) {
+                    alert("Unable to initialize the shader program.");
+                }
+                
+                //use program
+                gl.useProgram(glProgram);
+            }
+            
+            function makeShader(src, type){
+                
+                //compile the vertex shader
+                var shader = gl.createShader(type);
+                gl.shaderSource(shader, src);
+                gl.compileShader(shader);
+
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    
+                    console.log("Error compiling shader: " + gl.getShaderInfoLog(shader));
+                }
+                
+                return shader;
+            }
+            
+            function setupVertexShaderMatrix(){
+                
+                // uniform variables are references to variables inside the shaders
+                modelMatrixUniform = gl.getUniformLocation(glProgram, "modelMatrix");
+                viewMatrixUniform  = gl.getUniformLocation(glProgram, "viewMatrix");
+                projMatrixUniform  = gl.getUniformLocation(glProgram, "projMatrix");
+                normalMatrixUniform  = gl.getUniformLocation(glProgram, "normalMatrix");
+                
+                // overwriting the shader variables with those within the context of glProgram
+                gl.uniformMatrix4fv(modelMatrixUniform, false, initialModelMatrix);
+                gl.uniformMatrix4fv(viewMatrixUniform, false, viewMatrix);
+                gl.uniformMatrix4fv(projMatrixUniform, false, projMatrix);
+                gl.uniformMatrix4fv(normalMatrixUniform, false, initialNormalMatrix);
+            }
+            
+            function setupFragmentShaderMatrix(){
+
+                colorUniform  = gl.getUniformLocation(glProgram, "color");
+                gl.uniform4fv(colorUniform, initialColor);
+
+                uSamplerUniform = gl.getUniformLocation(glProgram, 'uSampler');
+                gl.uniform1i(uSamplerUniform, null);
+            }            
+
+            function setupCraneControls() {
+
+                craneControls = new CraneControls();   
+            }
+
+            function setupBuildingControls() {
+
+                buildingControls = new BuildingControls();   
+            }
+
+            function setupSlideControls() {
+
+                slideControls = new SlideControls();   
+            }
+
+            function setupOrbitalCamera() {
+
+                orbitalCam = new OrbitalCameraControl([0,0,0]);
+            }
+
+            function setupDroneCamera() {
+
+                droneCam = new DroneCameraControl([18,5,35]);
+            }
+
+            function setupCraneOperatorCamera() {
+                
+                craneOperatorCam = new CraneOperatorCameraControl(cranePosition);
+            }
+
+            function setupMatrices() {
+                
+                mat4.perspective(projMatrix,45, canvas.width / canvas.height, 0.1, 100.0);
+                
+                mat4.identity(initialModelMatrix);
+                mat4.rotate(initialModelMatrix,initialModelMatrix, -1.57078, [1.0, 0.0, 0.0]);
+
+                mat4.identity(viewMatrix);
+                mat4.translate(viewMatrix,viewMatrix, [0.0, 0.0, -10.0]);
+            }
+
+            function createObjects() {
+
+                // rows and columns for the creation of meshes for the surfaces
+                var rows = 5;
+                var columns = 10;
+
+                // floor
+                var floorWidth = 200;
+                //var floorColor = vec4.fromValues(0.335,0.488,0.273,1.0);
+                var floorColor = vec4.fromValues(1.0,1.0,1.0,1.0);
+                var floor = new Square(rows,columns,floorWidth,floorColor,vec2.fromValues(50,50),"texturas/Grass01_2K_BaseColor_resultado.jpg");
+
+                // sky
+                var skySphereRadius = 80;
+                var skyColor = vec4.fromValues(0.678,0.847,0.902,1.0);
+                var sky = new Sphere(rows,columns,skySphereRadius,skyColor);
+                //floor.setTextureURL("texturas/cielo.jpg");
+
+                // 2001 monolith
+                var monilithWidth = 2;
+                var monolithColor = vec4.fromValues(0.05,0.05,0.05,1);
+                var monolith = new Cube(rows, columns, monilithWidth, monolithColor);
+                monolith.setTranslation(-40,monilithWidth*5/2,-20);
+                monolith.setScale(1,5,2);
+               
+                // crane
+                var crane = new Object3D();
+                crane.setTranslation(cranePosition[0], cranePosition[1], cranePosition[2]);
+
+                //  pieza A
+                var heightPiezaA = 4;
+                var widthPiezaA = 2;
+                //var colorPiezaA = vec4.fromValues(1.0,1.0,0.0,1.0);
+                var colorPiezaA =  vec4.fromValues(1.0,1.0,1.0,1.0);
+                var piezaA = new Cube(rows, columns, widthPiezaA, colorPiezaA, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
+                piezaARef = piezaA;
+                piezaA.setTranslation(0,heightPiezaA,0);
+                crane.addChildren(piezaA);
+                piezaA.setScale(1,heightPiezaA,1);
+                
+                // pieza B
+                var heightPiezaB = 1.33;
+                var widthPiezaB = 1.5;
+                //var colorPiezaB = vec4.fromValues(1.0,0.4,0.0,1.0);
+                var colorPiezaB =  vec4.fromValues(1.0,1.0,1.0,1.0);
+                var piezaB = new Cube(rows, columns, widthPiezaB, colorPiezaB, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
+                piezaBRef = piezaB;
+                
+                // <--- set height --->
+                piezaB.setTranslation(0,modifHeightPiezaB*heightPiezaB,0);
+                piezaA.addChildren(piezaB);
+                piezaB.setScale(1,heightPiezaB,1);
+
+                // pieza C
+                var heightPiezaC = 1.20;
+                var radiusPiezaC = 0.5;
+                var colorPiezaC = vec4.fromValues(0.40,0.40,0.42,1.0);
+                var piezaC = new Cylinder(rows, columns, radiusPiezaC, heightPiezaC, colorPiezaC);
+                piezaCRef = piezaC;
+                // <--- set height --->
+                piezaC.setTranslation(0,modifHeightPiezaC*heightPiezaC,0);
+                piezaC.setTranslation(0,0.035,0);
+                piezaB.addChildren(piezaC);
+                piezaC.setScale(1,heightPiezaC,1);
+
+                cabinHeight = 0;
+                cabinHeight += heightPiezaA*heightPiezaA;
+                cabinHeight += heightPiezaA*modifHeightPiezaB*heightPiezaB;
+                cabinHeight += modifHeightPiezaC*heightPiezaC*heightPiezaB*heightPiezaA;
+
+                // pieza D
+                // <--- set cabin rotation --->
+                var piezaD = new Object3D();
+                piezaDRef = piezaD;
+                piezaD.setRotation(0,cabinRotation,0);
+                piezaD.setScale(1,1/heightPiezaC,1);
+                piezaD.setTranslation(0,1.225,0);
+                piezaC.addChildren(piezaD);
+                var widthPiezaD = 1;
+                //var colorPiezaD = vec4.fromValues(1.0,1.0,0.0,1.0);
+                var colorPiezaD = vec4.fromValues(1.0,1.0,1.0,1.0);
+                var cabinPiezaD = new Cube(rows, columns, widthPiezaD, colorPiezaD, vec2.fromValues(1,1),"texturas/pinturaOxidada_resultado.jpg"); 
+                piezaD.addChildren(cabinPiezaD);
+                cabinPiezaD.setTranslation(0,-0.35,-0.6);
+                cabinPiezaD.setScale(3,0.3,1.3);
+                var platformPiezaD = new Cube(rows, columns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
+                piezaD.addChildren(platformPiezaD);
+                platformPiezaD.setTranslation(0,-0.45,0.6);
+                platformPiezaD.setScale(3,0.1,1.3);
+                var roofPiezaD = new Cube(rows, columns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
+                piezaD.addChildren(roofPiezaD);
+                roofPiezaD.setTranslation(0,-0.215,0.4);
+                roofPiezaD.setScale(3,0.03,0.8);
+                var headPiezaD = new Cube(rows, columns, widthPiezaD, colorPiezaD, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg"); 
+                piezaD.addChildren(headPiezaD);
+                headPiezaD.setTranslation(0,-0.1,-0.6);
+                headPiezaD.setScale(0.5,0.25,0.5);
+                var colorHandrailPiezaD = vec4.fromValues(0.58,0.29,0,1);
+                var handrailPiezaD = new Cube(rows,columns,widthPiezaD,colorHandrailPiezaD);
+                handrailPiezaD.setTranslation(0,-6.2,1.0);
+                handrailPiezaD.setScale(1.1,0.4,0.2);
+                roofPiezaD.addChildren(handrailPiezaD);
+                var auxRoofPiezaDColor = vec4.fromValues(0.1,0.2,0.1,1);
+                var auxRoofPiezaD = new Cube(rows,columns,widthPiezaD,auxRoofPiezaDColor);
+                auxRoofPiezaD.setTranslation(0,-0.5,0.2);
+                auxRoofPiezaD.setScale(1.05,0.4,1);
+                roofPiezaD.addChildren(auxRoofPiezaD);
+
+                // trolley
+                var trolley = new Object3D();
+                trolley.setRotation(0,0,Math.PI/2);
+                trolley.setScale(0.15,1,1);
+                trolley.setTranslation(-6.8,0,0);
+                piezaD.addChildren(trolley);  
+
+                // pieza E
+                var lengthPiezaE = 2;
+                var radiusPiezaE = 1;
+                var colorPiezaE = vec4.fromValues(0.40,0.40,0.42,1.0);
+                var piezaE = new Cylinder(rows, columns, radiusPiezaE, lengthPiezaE, colorPiezaE);
+                piezaERef = piezaE;
+                piezaE.setScale(0.20,0.3,0.20);
+                piezaE.setTranslation(33,0,-3);
+                trolley.addChildren(piezaE);
+
+                // auxArm
+                var auxArm = new Object3D();
+                piezaD.addChildren(auxArm);
+                auxArm.setScale(1,1/(heightPiezaA*heightPiezaB),1)
+                auxArm.setTranslation(0,-0.2,-0.6);
+
+                // arm
+                var arm = new Object3D();
+                armRef = arm;
+                // <--- set arm rotation --->
+                armRotation = initialArmRotation;
+                auxArm.addChildren(arm);
+                arm.setRotation(armRotation,0,0);
+
+                // pieza F
+                var lengthPiezaF = 30;
+                var widthPiezaF = 0.4;
+                //var colorPiezaF = vec4.fromValues(1.0,0.4,0.0,1.0);
+                var colorPiezaF = vec4.fromValues(1.0,1.0,1.0,1.0);
+                var piezaF = new Cube(rows, columns, widthPiezaF, colorPiezaF, vec2.fromValues(1.0,10.0));
+                piezaFRef = piezaF;
+                arm.addChildren(piezaF);
+                piezaF.setScale(1,1,lengthPiezaF);
+                piezaF.setTranslation(0,0,0.1);
+
+                // counterweight
+                var counterweightWidth = 2;
+                var counterweightColor = vec4.fromValues(0.60,0.60,0.62,1.0);
+                var counterweight = new Cube(rows, columns, counterweightWidth, counterweightColor);
+                counterweight.setTranslation(0,0,-4);
+                arm.addChildren(counterweight);
+
+                // trolley cable
+                var trolleyCable = new Object3D();
+                arm.addChildren(trolleyCable);
+                trolleyCableRef = trolleyCable;
+                var armLength = 58;
+                trolleyCable.setRotation(-armRotation,0,0);
+                trolleyCable.setRotation(0,0,Math.PI/2);
+                trolleyCable.setScale(0.15,1,1);
+                trolleyCable.setRotation(0,0,Math.PI/2);
+                trolleyCable.setTranslation(0,0,8.7);
+                trolleyCable.setTranslation(0,armLength*Math.sin(armRotation),0);
+                trolleyCable.setTranslation(0,0,-0.15*armLength*(1-Math.cos(armRotation)));
+
+                // bolt
+                var boltLength = 2;
+                var boltRadius = 1;
+                var boltColor = vec4.fromValues(0.40,0.40,0.42,1.0);
+                var bolt = new Cylinder(rows, columns, boltRadius, boltLength, boltColor);
+                trolleyCable.addChildren(bolt);
+                bolt.setTranslation(0,-0.1,0);
+                bolt.setScale(0.3,0.8,0.3);
+                bolt.setRotation(0,0,Math.PI/2);
+                bolt.setScale(2.5,1,1);
+                bolt.setScale(0.5,1,0.5);
+                
+                // pieza G
+                // <--- set cable extension --->
+                var radiusPiezaG = 0.05;
+                var colorPiezaG = vec4.fromValues(0.75,0.77,0.79,1.0);
+                var heightPiezaG = 1;
+                var piezaG = new Cylinder(rows, columns, radiusPiezaG, heightPiezaG, colorPiezaG);
+                piezaGRef = piezaG;
+                piezaG.setTranslation(0,1+cableExtension/2,0); 
+                piezaG.setScale(1,cableExtension,1);
+                trolleyCable.addChildren(piezaG);
+
+                // pieza h
+                var widthPiezaH = 1;
+                //var colorPiezaH = vec4.fromValues(0,0.8,1,1.0);
+                var colorPiezaH = vec4.fromValues(1.0,1.0,1.0,1.0);
+                var piezaH = new Cube(rows, columns, widthPiezaH, colorPiezaH, vec2.fromValues(1.0,1.0), "texturas/WoodenPlanks05_4K_BaseColor_resultado.jpg");
+                piezaHRef = piezaH;
+                piezaH.setTranslation(0,cableExtension,0);
+                piezaH.setTranslation(0,8,0);
+                trolleyCable.addChildren(piezaH);
+                piezaH.setScale(3,1,3);
+
+                // cables
+                var cableHeight = 8;
+                var cableRadius = 0.05;
+                var cableColor = vec4.fromValues(0.75,0.77,0.79,1.0);
+                
+                // cable 2
+                var cable1 = new Cylinder(rows, columns, cableRadius, cableHeight, cableColor);
+                cable1Ref = cable1;
+                piezaH.addChildren(cable1);
+                cable1.setScale(1/3,1,1/3);
+                cable1.setTranslation(0.7,-8/2+0.5,0.7);
+                cable1.setRotation(0.18,0,-0.18);
+                
+                // cable 2
+                var cable2 = new Cylinder(rows, columns, cableRadius, cableHeight, cableColor);
+                cable2Ref = cable2;
+                piezaH.addChildren(cable2);
+                cable2.setScale(1/3,1,1/3);
+                cable2.setTranslation(-0.7,-8/2+0.5,0.7);
+                cable2.setRotation(0.18,0,0.18);
+                
+                // cable 3
+                var cable3 = new Cylinder(rows, columns, cableRadius, cableHeight, cableColor);
+                cable3Ref = cable3;
+                piezaH.addChildren(cable3);
+                cable3.setScale(1/3,1,1/3);
+                cable3.setTranslation(0.7,-8/2+0.5,-0.7);
+                cable3.setRotation(-0.18,0,-0.18);
+                
+                // cable 4
+                var cable4 = new Cylinder(rows, columns, cableRadius, cableHeight, cableColor);
+                cable4Ref = cable4;
+                piezaH.addChildren(cable4);
+                cable4.setScale(1/3,1,1/3);
+                cable4.setTranslation(-0.7,-8/2+0.5,-0.7);
+                cable4.setRotation(-0.18,0,0.18);
+
+
+                objects.push(floor);
+                objects.push(crane);
+                objects.push(sky);
+                objects.push(monolith);
+               
+
+                building = new Building();
+                
+                slide = new Slide(5,3,vec4.fromValues(0.90,0.80,0.10,1.0),5); // (height,width,color,levels)
+            }
+
+            function drawScene(){
+
+                setupVertexShaderMatrix();
+
+                for (let index = 0; index < objects.length; index++) {
+                    
+                    objects[index].draw(mat4.create());
+                }
+
+                building.draw();
+                slide.draw();
+            }
+            
+            function tick(){
+    
+                craneControls.update();
+                buildingControls.update();
+                slideControls.update();
+                chooseCamera.toggle();
+                orbitalCam.update();
+                droneCam.update();
+                craneOperatorCam.update();
+
+                switch ( currentCam ) {
+
+                    case "orbital": // orbital camera
+                        
+                        viewMatrix = orbitalCam.getViewMatrix();
+                        break;
+                        
+                    case "drone": // drone camera
+                        
+                        viewMatrix = droneCam.getViewMatrix();
+                        break;
+
+                    case "crane operator": // crane operator camera
+                        
+                        viewMatrix = craneOperatorCam.getViewMatrix();
+                        break;
+
+                    default:
+
+                        break;
+                }
+
+                requestAnimationFrame(tick);
+                drawScene();
+            }
+
+            window.onload=initWebGL;
+
+        </script>
+    </body>
+</html>
