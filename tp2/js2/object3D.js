@@ -23,11 +23,17 @@ class Object3D {
         this.textureScale = vec2.create();
 
         this.isReflective = false;
+        this.isTerrain = false;
     }
 
     setReflective() {
 
         this.isReflective = true;
+    }
+
+    setTerrain() {
+
+        this.isTerrain = true;
     }
 
     resetModelMatrix() {
@@ -73,13 +79,18 @@ class Object3D {
 
             if(this.isReflective) {
 
-                setShaderMatrix(m, this.color, this.texture, true, glProgramReflectionMap);
-                drawTriangleStripMesh(this.triangleStripMesh, true);
+                setShaderMatrix(m, this.color, this.texture, true, false);
+                drawTriangleStripMesh(this.triangleStripMesh, true, false);
     
+            } else if(this.isTerrain) {
+
+                setShaderMatrix(m, this.color, this.texture, false, true);
+                drawTriangleStripMesh(this.triangleStripMesh, false, true);
+
             } else {
     
-                setShaderMatrix(m, this.color, this.texture, false, glProgram);
-                drawTriangleStripMesh(this.triangleStripMesh, false);
+                setShaderMatrix(m, this.color, this.texture, false, false);
+                drawTriangleStripMesh(this.triangleStripMesh, false, false);
             }
         }
 

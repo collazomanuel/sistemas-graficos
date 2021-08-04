@@ -137,18 +137,23 @@ class Building {
             if(cp1[0] == cp2[0]) {
 
                 zRotation = true;
+                xRotation = false;
 
             } else {
 
                 xRotation = true;
+                zRotation = false;
             }
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
 
+            /*
             if(centerPosition[0]>centerPosition[2]) {
 
                 window.setScale(1,-1,1);
-            }  
+            }
+
+            */
 
             windows.addChildren(window);
 
@@ -344,10 +349,12 @@ class Building {
         var curve1 = new ClosedQuadraticBSpline();
         curve1.setControlPoints(this.controlPointsRandom1);
         curve1.setCenterPoint(vec3.fromValues(0,0,0));
+
         var tile1 = new Tile(curve1, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
         var translation = vec3.fromValues(0,floorHeight,0);
         mat4.fromTranslation(m1, translation);
         tile1.draw(m1);
+
 
         // paso 4: dibujar pisos seccion 2
         var m2 = mat4.create();
@@ -372,8 +379,11 @@ class Building {
         var translation = vec3.fromValues(0,floorHeight,0);
         mat4.fromTranslation(m2, translation);
         mat4.scale(m2, m2, vec3.fromValues(0.75,1.0,0.75));
+        
+
         var tile2 = new Tile(curve2, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
         tile2.draw(m2);
+
 
         // paso 6: dibujar ascensor
         var lifterHeight = 2 + baseHeight + 2.0*(this.numFloorsFirstSection+this.numFloorsSecondSection);

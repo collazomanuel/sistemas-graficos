@@ -118,8 +118,6 @@ class TileSurface extends SweptSurface {
             this.uvBuffer.push(uv[0]);
             this.uvBuffer.push(uv[1]);
         }
-
-        
     }
 
     addSurfaceVertices() {
@@ -207,7 +205,7 @@ class TileSurface extends SweptSurface {
     generateIndexBuffer() {
 
         var bottomLidIndex = 0;
-        var topLidIndex = (this.positionBuffer.length/3);
+        var topLidIndex = (this.positionBuffer.length/3)-1;
 
         var verticesPerLevel = this.perimeter.positions.length;
 
@@ -216,12 +214,14 @@ class TileSurface extends SweptSurface {
         for (let i = 1; i < verticesPerLevel+1; i++) {
             
             this.indexBuffer.push(bottomLidIndex);
+
             this.indexBuffer.push(i); // first vertices
         }
 
         for (let point = 0; point < verticesPerLevel; point++) {
 
             this.indexBuffer.push((1+(0+0)*verticesPerLevel)+point);
+
             this.indexBuffer.push((1+(0+1)*verticesPerLevel)+point);
         }
 
@@ -234,6 +234,7 @@ class TileSurface extends SweptSurface {
             for (let point = 0; point < verticesPerLevel; point++) {
 
                 this.indexBuffer.push((1+(level+0+1)*verticesPerLevel)+point);
+
                 this.indexBuffer.push((1+(level+1+1)*verticesPerLevel)+point);
             }
 
@@ -245,15 +246,17 @@ class TileSurface extends SweptSurface {
         for (let point = 0; point < verticesPerLevel; point++) {
 
             this.indexBuffer.push((1+(this.levels-1+0)*verticesPerLevel)+point);
+
+            
             this.indexBuffer.push((1+(this.levels+1)*verticesPerLevel)+point);
         }
 
         this.indexBuffer.push(1+((this.levels+1)*verticesPerLevel)+0);
 
-
         for (let i = 0; i < verticesPerLevel; i++) {
             
             this.indexBuffer.push(topLidIndex);
+
             this.indexBuffer.push((topLidIndex-verticesPerLevel)+i); // last vertices
         }
     }

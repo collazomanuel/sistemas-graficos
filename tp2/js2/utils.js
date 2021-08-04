@@ -1,13 +1,8 @@
 
 // triangleStripMesh : container with the 4 buffers (position, normal, uv and index)
-function drawTriangleStripMesh(triangleStripMesh, isReflective) {
-	
-    if(triangleStripMesh == null) {
+function drawTriangleStripMesh(triangleStripMesh, isReflective, isTerrain) {
 
-        console.log("goal");
-    }
-
-	var modo = "edges";
+    var modo = "edges";
     
     if(isReflective) {
 
@@ -47,6 +42,43 @@ function drawTriangleStripMesh(triangleStripMesh, isReflective) {
         gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
             
+    } else if(isTerrain) {
+
+        // buffer setup
+
+        vertexPositionAttributeT = gl.getAttribLocation(glProgramTerrain, "aVertexPosition");
+        gl.enableVertexAttribArray(vertexPositionAttributeT);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_position_buffer);
+        gl.vertexAttribPointer(vertexPositionAttributeT, triangleStripMesh.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        textureCoordAttributeT = gl.getAttribLocation(glProgramTerrain, "aVertexUv");
+        gl.enableVertexAttribArray(textureCoordAttributeT);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_uvs_buffer);
+        gl.vertexAttribPointer(textureCoordAttributeT, triangleStripMesh.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        vertexNormalAttributeT = gl.getAttribLocation(glProgramTerrain, "aVertexNormal");
+        gl.enableVertexAttribArray(vertexNormalAttributeT);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_normal_buffer);
+        gl.vertexAttribPointer(vertexNormalAttributeT, triangleStripMesh.webgl_normal_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
+
+        if (modo!="wireframe"){
+    
+            //gl.uniform1i(glProgram.useLightingUniform,(lighting=="true"));                    
+            gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        if (modo!="smooth") {
+            
+            //gl.uniform1i(glProgram.useLightingUniform,false);
+            gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    
     } else {
 
         // buffer setup
@@ -87,14 +119,14 @@ function drawTriangleStripMesh(triangleStripMesh, isReflective) {
 }
 
 // set the shader matrix to transform the vertices
-function setShaderMatrix(mMatrix, color, texture, isReflective) {
+function setShaderMatrix(mMatrix, color, texture, isReflective, isTerrain) {
 
     // clear back buffer
 	//gl.enable(gl.CULL_FACE);
     //gl.enable(gl.DEPTH.TEST);
     //gl.clearColor(0,0,0,1);
     //gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    
+
     if(isReflective) {
 
         gl.useProgram(glProgramReflectionMap);
@@ -106,9 +138,45 @@ function setShaderMatrix(mMatrix, color, texture, isReflective) {
         gl.uniformMatrix4fv(modelMatrixUniformRM, false, mMatrix);
         gl.uniformMatrix4fv(normalMatrixUniformRM, false, normalMatrix);
 
+
         gl.activeTexture(gl.TEXTURE0);
         //gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
         gl.uniform1i(uSamplerCubeUniformRM, 0);
+
+
+    } else if(isTerrain) {
+
+        gl.useProgram(glProgramTerrain);
+
+        var normalMatrix = glMatrix.mat4.clone(mMatrix);
+        mat4.invert(normalMatrix,normalMatrix);
+        mat4.transpose(normalMatrix,normalMatrix);
+
+        gl.uniformMatrix4fv(modelMatrixUniformT, false, mMatrix);
+        gl.uniformMatrix4fv(normalMatrixUniformT, false, normalMatrix);
+
+
+        gl.useProgram(glProgramTerrain);
+
+        var texture1 = loadTexture("texturas/Grass01_2K_BaseColor_resultado.jpg");
+        var texture2 = loadTexture("texturas/Moss01_2K_BaseColor_resultado.jpg");
+        var texture3 = loadTexture("texturas/SandyGravel02_2K_BaseColor_resultado.jpg");
+
+
+
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, texture1);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, texture2);
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, texture3);
+
+        gl.uniform1i(uSamplerGrassUniformT, 1);
+        gl.uniform1i(uSamplerMossUniformT, 2);                
+        gl.uniform1i(uSamplerSandyGravelUniformT, 3);
+
+
+
 
     } else {
 
@@ -125,16 +193,13 @@ function setShaderMatrix(mMatrix, color, texture, isReflective) {
 
         if(texture != null) {
     
-            // Tell WebGL we want to affect texture unit 0
-            gl.activeTexture(gl.TEXTURE0);
-            // Bind the texture to texture unit 0
+            // Tell WebGL we want to affect texture unit 4
+            gl.activeTexture(gl.TEXTURE4);
+            // Bind the texture to texture unit 4
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.uniform1i(uSamplerUniform, 0);
-        
+            gl.uniform1i(uSamplerUniform, 4);
         }
     }
-
-    // ================================================
 }
 
 function ChooseCamera() {
