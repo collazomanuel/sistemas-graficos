@@ -6,8 +6,8 @@
         <link rel="shortcut icon" href="#">
         <style>
             body{ background-color: rgb(185, 182, 128); }
-            canvas{ background-color: rgb(255, 255, 255); }
-	    textarea{ background-color: black; color: white;}
+            canvas{ background-color: rgb(191, 230, 245); }
+			textarea{ background-color: black; color: white;}
         </style>
     </head>
     <body>
@@ -149,9 +149,9 @@
 
                 vUv = aVertexUv; // pass the texture coordinate to the fragment shader
 
-                vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+                vec3 ambientLight = vec3(0.8, 0.8, 0.8);
                 vec3 directionalLightColor = vec3(1.0, 1.0, 1.0);
-                vec3 directionalVector = normalize(vec3(0.9, -0.1, 0.9));
+                vec3 directionalVector = normalize(vec3(1.0, 0.0, 1.0));
                 float directional = max(dot(vNormal.xyz, directionalVector), 0.0);
                 vLighting = ambientLight + (directionalLightColor * directional);
             }
@@ -186,13 +186,84 @@
                 
                 if((color[0] == 1.0) && (color[1] == 1.0) && (color[2] == 1.0)) {
 
+                    // use texture
                     pixelColor = texture2D(uSampler, vUv);
-                
+
                 } else {
 
+                    // use plain color
                     pixelColor = vec4(color);
-                }      
+                }    
                 
+                gl_FragColor = vec4(pixelColor.rgb * vLighting, 1.0);
+            }
+
+        </script>
+
+        <!-- Vertex Shader (Reflection Map) -->
+
+        <script id="shader-vs-reflection-map" type="x-shader/x-vertex">
+
+            precision highp float;
+
+            attribute vec3 aVertexPosition;
+            attribute vec3 aVertexNormal;
+            attribute vec2 aVertexUv; // aTextureCoordinate
+
+            uniform mat4 modelMatrix;            
+            uniform mat4 viewMatrix;
+            uniform mat4 projMatrix;
+            uniform mat4 normalMatrix;
+
+            varying vec3 vPosWorld; 
+            varying vec3 vNormal;
+            varying vec2 vUv; // vTextureCoordinate
+
+            varying vec3 vLighting;
+            
+            void main(void) {
+
+                vPosWorld=(modelMatrix*vec4(aVertexPosition,1.0)).xyz; // position in world coordinates
+                vNormal=(normalMatrix*vec4(aVertexNormal,1.0)).xyz; // normal in world coordinates
+                
+                gl_Position = projMatrix * viewMatrix * vec4(vPosWorld, 1.0);
+
+                vUv = aVertexUv; // pass the texture coordinate to the fragment shader
+
+                vec3 ambientLight = vec3(0.8, 0.8, 0.8);
+                vec3 directionalLightColor = vec3(1.0, 1.0, 1.0);
+                vec3 directionalVector = normalize(vec3(1.0, 0.0, 1.0));
+                float directional = max(dot(vNormal.xyz, directionalVector), 0.0);
+                vLighting = ambientLight + (directionalLightColor * directional);
+            }
+
+        </script>
+
+        <!-- Fragment Shader (Reflection Map) -->
+
+        <script id="shader-fs-reflection-map" type="x-shader/x-fragment">
+            
+            precision highp float;
+
+            uniform samplerCube uSamplerCube;
+            uniform vec3 worldCameraPosition;
+            
+            varying vec3 vPosWorld;
+            varying vec3 vNormal;
+            varying vec2 vUv; // vTextureCoordinate
+
+            varying vec3 vLighting;
+            
+            void main(void) {
+
+                vec4 pixelColor;
+
+                // use reflective map
+                vec3 worldNormal = normalize(vNormal);
+                vec3 eyeToSurfaceDir = normalize(vPosWorld - worldCameraPosition);
+                vec3 direction = reflect(eyeToSurfaceDir,worldNormal);
+                pixelColor = textureCube(uSamplerCube, direction);
+
                 gl_FragColor = vec4(pixelColor.rgb * vLighting, 1.0);
             }
 
@@ -216,6 +287,10 @@
 
             //==========================================
 
+            // =============================
+            //     normal shader
+            // =============================
+            
             var modelMatrixUniform = null;
             var viewMatrixUniform = null;
             var projMatrixUniform = null;
@@ -229,14 +304,31 @@
 
             var uSamplerUniform = null;
 
+            // =============================
+            //     reflection map shader
+            // =============================
+
+            var modelMatrixUniformRM = null;
+            var viewMatrixUniformRM = null;
+            var projMatrixUniformRM = null;
+            var normalMatrixUniformRM = null;
+
+            var vertexPositionAttributeRM = null;
+            var vertexNormalAttributeRM = null;
+            var textureCoordAttributeRM = null;
+
+            var uSamplerCubeUniformRM = null;
+            var worldCameraPositionUniformRM = null;
+
             //==========================================
 
             var trianglesVerticeBuffer = null;
             var trianglesNormalBuffer = null;
-            // var trianglesUvBuffer = null;
+            var trianglesUvBuffer = null;
             var trianglesIndexBuffer = null;
 
             glProgram = null;
+            glProgramReflectionMap = null;
 
             //==========================================
             
@@ -316,6 +408,8 @@
 
             let textures = new Map();
 
+            let cubeMapFaces = new Map();
+
             //===================
             
             // WebGL Initialization
@@ -343,6 +437,7 @@
                     currentCam = "drone"; // default
                     chooseCamera = new ChooseCamera();
                     initShaders();
+                    loadCubeMapTextures();
                     createObjects();
                     setupVertexShaderMatrix();
                     setupFragmentShaderMatrix();
@@ -371,6 +466,10 @@
                     
             function initShaders() {
                 
+                // =============================
+                //          normal shader
+                // =============================
+                
                 // get shader source
                 var fs_source = document.getElementById('shader-fs').innerHTML;
                 var vs_source = document.getElementById('shader-vs').innerHTML;
@@ -388,11 +487,38 @@
                 gl.linkProgram(glProgram);
 
                 if (!gl.getProgramParameter(glProgram, gl.LINK_STATUS)) {
-                    alert("Unable to initialize the shader program.");
+                    alert("Unable to initialize the normal shader program.");
                 }
                 
                 //use program
                 gl.useProgram(glProgram);
+
+                // =============================
+                //     reflection map shader
+                // =============================
+
+                // get shader source
+                var fs_source_rm = document.getElementById('shader-fs-reflection-map').innerHTML;
+                var vs_source_rm = document.getElementById('shader-vs-reflection-map').innerHTML;
+
+                // compile shaders
+                vertexShader = makeShader(vs_source_rm, gl.VERTEX_SHADER);
+                fragmentShader = makeShader(fs_source_rm, gl.FRAGMENT_SHADER);
+                
+                // create program
+                glProgramReflectionMap = gl.createProgram();
+                
+                // attach and link shaders to the program
+                gl.attachShader(glProgramReflectionMap, vertexShader);
+                gl.attachShader(glProgramReflectionMap, fragmentShader);
+                gl.linkProgram(glProgramReflectionMap);
+
+                if (!gl.getProgramParameter(glProgramReflectionMap, gl.LINK_STATUS)) {
+                    alert("Unable to initialize the reflection map shader program.");
+                }
+                
+                //use program
+                gl.useProgram(glProgramReflectionMap);
             }
             
             function makeShader(src, type){
@@ -410,7 +536,13 @@
                 return shader;
             }
             
-            function setupVertexShaderMatrix(){
+            function setupVertexShaderMatrix() {
+
+                // =============================
+                //         normal shader
+                // =============================
+
+                gl.useProgram(glProgram);
                 
                 // uniform variables are references to variables inside the shaders
                 modelMatrixUniform = gl.getUniformLocation(glProgram, "modelMatrix");
@@ -423,16 +555,119 @@
                 gl.uniformMatrix4fv(viewMatrixUniform, false, viewMatrix);
                 gl.uniformMatrix4fv(projMatrixUniform, false, projMatrix);
                 gl.uniformMatrix4fv(normalMatrixUniform, false, initialNormalMatrix);
+
+                // =============================
+                //     reflection map shader
+                // =============================
+
+                gl.useProgram(glProgramReflectionMap);
+
+                // uniform variables are references to variables inside the shaders
+                modelMatrixUniformRM = gl.getUniformLocation(glProgramReflectionMap, "modelMatrix");
+                viewMatrixUniformRM  = gl.getUniformLocation(glProgramReflectionMap, "viewMatrix");
+                projMatrixUniformRM  = gl.getUniformLocation(glProgramReflectionMap, "projMatrix");
+                normalMatrixUniformRM  = gl.getUniformLocation(glProgramReflectionMap, "normalMatrix");
+                
+                // overwriting the shader variables with those within the context of glProgramReflectionMap
+                gl.uniformMatrix4fv(modelMatrixUniformRM, false, initialModelMatrix);
+                gl.uniformMatrix4fv(viewMatrixUniformRM, false, viewMatrix);
+                gl.uniformMatrix4fv(projMatrixUniformRM, false, projMatrix);
+                gl.uniformMatrix4fv(normalMatrixUniformRM, false, initialNormalMatrix);
             }
             
-            function setupFragmentShaderMatrix(){
+            function setupFragmentShaderMatrix() {
+
+                // =============================
+                //     normal shader
+                // =============================
+
+                gl.useProgram(glProgram);
 
                 colorUniform  = gl.getUniformLocation(glProgram, "color");
                 gl.uniform4fv(colorUniform, initialColor);
 
                 uSamplerUniform = gl.getUniformLocation(glProgram, 'uSampler');
                 gl.uniform1i(uSamplerUniform, null);
-            }            
+
+                // =============================
+                //     reflection map shader
+                // =============================
+
+                gl.useProgram(glProgramReflectionMap);
+
+                uSamplerCubeUniformRM = gl.getUniformLocation(glProgramReflectionMap, 'uSamplerCube');
+                gl.uniform1i(uSamplerCubeUniformRM, null);
+
+                worldCameraPositionUniformRM = gl.getUniformLocation(glProgramReflectionMap, 'worldCameraPosition');
+                gl.uniform3fv(worldCameraPositionUniformRM, vec3.fromValues(0,0,0));
+            }
+            
+            function loadCubeMapTextures() {
+
+                
+
+                // Create a texture.
+                var texture = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+                
+                const faceInfos = [
+                    
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_POSITIVE_X, 
+                        url: 'texturas/skyMap/px.png',
+                    },
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 
+                        url: 'texturas/skyMap/nx.png',
+                    },
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 
+                        url: 'texturas/skyMap/py.png',
+                    },
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 
+                        url: 'texturas/skyMap/ny.png',
+                    },
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z, 
+                        url: 'texturas/skyMap/pz.png',
+                    },
+                    {
+                        target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 
+                        url: 'texturas/skyMap/nz.png',
+                    },
+                ];
+
+                faceInfos.forEach((faceInfo) => {
+                    
+                    const {target, url} = faceInfo;
+                
+                    // Upload the canvas to the cubemap face.
+                    const level = 0;
+                    const internalFormat = gl.RGBA;
+                    const width = 512;
+                    const height = 512;
+                    const format = gl.RGBA;
+                    const type = gl.UNSIGNED_BYTE;
+                    
+                    // setup each face so it's immediately renderable
+                    gl.texImage2D(target, level, internalFormat, width, height, 0, format, type, null);
+                    
+                    // Asynchronously load an image
+                    const image = new Image();
+                    image.src = url;
+                    image.addEventListener('load', function() {
+
+                        // Now that the image has loaded upload it to the texture.
+                        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+                        gl.texImage2D(target, level, internalFormat, format, type, image);
+                        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+                    });
+                });
+
+                gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            }
 
             function setupCraneControls() {
 
@@ -466,7 +701,7 @@
 
             function setupMatrices() {
                 
-                mat4.perspective(projMatrix,45, canvas.width / canvas.height, 0.1, 100.0);
+                mat4.perspective(projMatrix,45, canvas.width / canvas.height, 0.1, 200.0);
                 
                 mat4.identity(initialModelMatrix);
                 mat4.rotate(initialModelMatrix,initialModelMatrix, -1.57078, [1.0, 0.0, 0.0]);
@@ -481,22 +716,19 @@
                 var rows = 5;
                 var columns = 10;
 
+                var cubeRows = 2;
+                var cubeColumns = 2;
+
                 // floor
-                var floorWidth = 200;
+                var floorWidth = 500;
                 //var floorColor = vec4.fromValues(0.335,0.488,0.273,1.0);
                 var floorColor = vec4.fromValues(1.0,1.0,1.0,1.0);
-                var floor = new Square(rows,columns,floorWidth,floorColor,vec2.fromValues(50,50),"texturas/Grass01_2K_BaseColor_resultado.jpg");
-
-                // sky
-                var skySphereRadius = 80;
-                var skyColor = vec4.fromValues(0.678,0.847,0.902,1.0);
-                var sky = new Sphere(rows,columns,skySphereRadius,skyColor);
-                //floor.setTextureURL("texturas/cielo.jpg");
+                var floor = new Square(2,2,floorWidth,floorColor,vec2.fromValues(50,50),"texturas/Grass01_2K_BaseColor_resultado.jpg");
 
                 // 2001 monolith
                 var monilithWidth = 2;
                 var monolithColor = vec4.fromValues(0.05,0.05,0.05,1);
-                var monolith = new Cube(rows, columns, monilithWidth, monolithColor);
+                var monolith = new Cube(cubeRows, cubeColumns, monilithWidth, monolithColor);
                 monolith.setTranslation(-40,monilithWidth*5/2,-20);
                 monolith.setScale(1,5,2);
                
@@ -509,7 +741,7 @@
                 var widthPiezaA = 2;
                 //var colorPiezaA = vec4.fromValues(1.0,1.0,0.0,1.0);
                 var colorPiezaA =  vec4.fromValues(1.0,1.0,1.0,1.0);
-                var piezaA = new Cube(rows, columns, widthPiezaA, colorPiezaA, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
+                var piezaA = new Cube(cubeRows, cubeColumns, widthPiezaA, colorPiezaA, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
                 piezaARef = piezaA;
                 piezaA.setTranslation(0,heightPiezaA,0);
                 crane.addChildren(piezaA);
@@ -520,7 +752,7 @@
                 var widthPiezaB = 1.5;
                 //var colorPiezaB = vec4.fromValues(1.0,0.4,0.0,1.0);
                 var colorPiezaB =  vec4.fromValues(1.0,1.0,1.0,1.0);
-                var piezaB = new Cube(rows, columns, widthPiezaB, colorPiezaB, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
+                var piezaB = new Cube(cubeRows, cubeColumns, widthPiezaB, colorPiezaB, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg");
                 piezaBRef = piezaB;
                 
                 // <--- set height --->
@@ -556,29 +788,29 @@
                 var widthPiezaD = 1;
                 //var colorPiezaD = vec4.fromValues(1.0,1.0,0.0,1.0);
                 var colorPiezaD = vec4.fromValues(1.0,1.0,1.0,1.0);
-                var cabinPiezaD = new Cube(rows, columns, widthPiezaD, colorPiezaD, vec2.fromValues(1,1),"texturas/pinturaOxidada_resultado.jpg"); 
+                var cabinPiezaD = new Cube(cubeRows, cubeColumns, widthPiezaD, colorPiezaD, vec2.fromValues(1,1),"texturas/pinturaOxidada_resultado.jpg"); 
                 piezaD.addChildren(cabinPiezaD);
                 cabinPiezaD.setTranslation(0,-0.35,-0.6);
                 cabinPiezaD.setScale(3,0.3,1.3);
-                var platformPiezaD = new Cube(rows, columns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
+                var platformPiezaD = new Cube(cubeRows, cubeColumns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
                 piezaD.addChildren(platformPiezaD);
                 platformPiezaD.setTranslation(0,-0.45,0.6);
                 platformPiezaD.setScale(3,0.1,1.3);
-                var roofPiezaD = new Cube(rows, columns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
+                var roofPiezaD = new Cube(cubeRows, cubeColumns, widthPiezaD*0.98, colorPiezaD, vec2.fromValues(1,2),"texturas/pinturaOxidada_resultado.jpg");
                 piezaD.addChildren(roofPiezaD);
                 roofPiezaD.setTranslation(0,-0.215,0.4);
                 roofPiezaD.setScale(3,0.03,0.8);
-                var headPiezaD = new Cube(rows, columns, widthPiezaD, colorPiezaD, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg"); 
+                var headPiezaD = new Cube(cubeRows, cubeColumns, widthPiezaD, colorPiezaD, vec2.fromValues(2,1),"texturas/pinturaOxidada_resultado.jpg"); 
                 piezaD.addChildren(headPiezaD);
                 headPiezaD.setTranslation(0,-0.1,-0.6);
                 headPiezaD.setScale(0.5,0.25,0.5);
                 var colorHandrailPiezaD = vec4.fromValues(0.58,0.29,0,1);
-                var handrailPiezaD = new Cube(rows,columns,widthPiezaD,colorHandrailPiezaD);
+                var handrailPiezaD = new Cube(cubeRows,cubeColumns,widthPiezaD,colorHandrailPiezaD);
                 handrailPiezaD.setTranslation(0,-6.2,1.0);
                 handrailPiezaD.setScale(1.1,0.4,0.2);
                 roofPiezaD.addChildren(handrailPiezaD);
                 var auxRoofPiezaDColor = vec4.fromValues(0.1,0.2,0.1,1);
-                var auxRoofPiezaD = new Cube(rows,columns,widthPiezaD,auxRoofPiezaDColor);
+                var auxRoofPiezaD = new Cube(cubeRows,cubeColumns,widthPiezaD,auxRoofPiezaDColor);
                 auxRoofPiezaD.setTranslation(0,-0.5,0.2);
                 auxRoofPiezaD.setScale(1.05,0.4,1);
                 roofPiezaD.addChildren(auxRoofPiezaD);
@@ -619,7 +851,7 @@
                 var widthPiezaF = 0.4;
                 //var colorPiezaF = vec4.fromValues(1.0,0.4,0.0,1.0);
                 var colorPiezaF = vec4.fromValues(1.0,1.0,1.0,1.0);
-                var piezaF = new Cube(rows, columns, widthPiezaF, colorPiezaF, vec2.fromValues(1.0,10.0));
+                var piezaF = new Cube(cubeRows, cubeColumns, widthPiezaF, colorPiezaF, vec2.fromValues(1.0,10.0));
                 piezaFRef = piezaF;
                 arm.addChildren(piezaF);
                 piezaF.setScale(1,1,lengthPiezaF);
@@ -628,7 +860,7 @@
                 // counterweight
                 var counterweightWidth = 2;
                 var counterweightColor = vec4.fromValues(0.60,0.60,0.62,1.0);
-                var counterweight = new Cube(rows, columns, counterweightWidth, counterweightColor);
+                var counterweight = new Cube(cubeRows, cubeColumns, counterweightWidth, counterweightColor);
                 counterweight.setTranslation(0,0,-4);
                 arm.addChildren(counterweight);
 
@@ -659,7 +891,7 @@
                 
                 // pieza G
                 // <--- set cable extension --->
-                var radiusPiezaG = 0.05;
+                var radiusPiezaG = 0.02;
                 var colorPiezaG = vec4.fromValues(0.75,0.77,0.79,1.0);
                 var heightPiezaG = 1;
                 var piezaG = new Cylinder(rows, columns, radiusPiezaG, heightPiezaG, colorPiezaG);
@@ -672,7 +904,7 @@
                 var widthPiezaH = 1;
                 //var colorPiezaH = vec4.fromValues(0,0.8,1,1.0);
                 var colorPiezaH = vec4.fromValues(1.0,1.0,1.0,1.0);
-                var piezaH = new Cube(rows, columns, widthPiezaH, colorPiezaH, vec2.fromValues(1.0,1.0), "texturas/WoodenPlanks05_4K_BaseColor_resultado.jpg");
+                var piezaH = new Cube(cubeRows, cubeColumns, widthPiezaH, colorPiezaH, vec2.fromValues(1.0,1.0), "texturas/WoodenPlanks05_4K_BaseColor_resultado.jpg");
                 piezaHRef = piezaH;
                 piezaH.setTranslation(0,cableExtension,0);
                 piezaH.setTranslation(0,8,0);
@@ -681,7 +913,7 @@
 
                 // cables
                 var cableHeight = 8;
-                var cableRadius = 0.05;
+                var cableRadius = 0.02;
                 var cableColor = vec4.fromValues(0.75,0.77,0.79,1.0);
                 
                 // cable 2
@@ -716,16 +948,14 @@
                 cable4.setTranslation(-0.7,-8/2+0.5,-0.7);
                 cable4.setRotation(-0.18,0,0.18);
 
-
                 objects.push(floor);
                 objects.push(crane);
-                objects.push(sky);
                 objects.push(monolith);
-               
 
                 building = new Building();
-                
-                slide = new Slide(5,3,vec4.fromValues(0.90,0.80,0.10,1.0),5); // (height,width,color,levels)
+
+                var slideColor = vec4.fromValues(1.0,0.5,0.0,1.0);
+                slide = new Slide(4,3,slideColor,5); // (height,width,color,levels)
             }
 
             function drawScene(){
@@ -740,6 +970,8 @@
                 building.draw();
                 slide.draw();
             }
+
+            
             
             function tick(){
     
@@ -756,16 +988,25 @@
                     case "orbital": // orbital camera
                         
                         viewMatrix = orbitalCam.getViewMatrix();
+                        var currentCameraPosition = orbitalCam.getPosition();
+                        gl.useProgram(glProgramReflectionMap);
+                        gl.uniform3fv(worldCameraPositionUniformRM, currentCameraPosition);
                         break;
                         
                     case "drone": // drone camera
                         
                         viewMatrix = droneCam.getViewMatrix();
+                        var currentCameraPosition = droneCam.getPosition();
+                        gl.useProgram(glProgramReflectionMap);
+                        gl.uniform3fv(worldCameraPositionUniformRM, currentCameraPosition);
                         break;
 
                     case "crane operator": // crane operator camera
                         
                         viewMatrix = craneOperatorCam.getViewMatrix();
+                        var currentCameraPosition = craneOperatorCam.getPosition();
+                        gl.useProgram(glProgramReflectionMap);
+                        gl.uniform3fv(worldCameraPositionUniformRM, currentCameraPosition);
                         break;
 
                     default:
