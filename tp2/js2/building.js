@@ -367,18 +367,18 @@ class Building {
         var tile1 = new Tile(curve1, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
         var translation = vec3.fromValues(0,floorHeight,0);
         mat4.fromTranslation(m1, translation);
+        tile1.setScale(1.0,1.20,1.0); // make it 20% wider
         tile1.draw(m1);
-
 
         // paso 4: dibujar pisos seccion 2
         var m2 = mat4.create();
 
-        var translation = vec3.fromValues(0,floorHeight-0.2,0);
+        var translation = vec3.fromValues(0,floorHeight,0);
         mat4.fromTranslation(m2, translation);
         
         for (let i = 0; i < this.numFloorsSecondSection; i++) {
             
-            var translation = vec3.fromValues(0,floorHeight-0.2,0);
+            var translation = vec3.fromValues(0,floorHeight+0.05,0);
             mat4.fromTranslation(m2, translation);
             mat4.scale(m2, m2, vec3.fromValues(0.75,1.0,0.75));
 
