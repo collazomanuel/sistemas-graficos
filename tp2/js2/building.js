@@ -147,13 +147,18 @@ class Building {
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
 
-            /*
-            if(centerPosition[0]>centerPosition[2]) {
+
+            var posX = centerPosition[0];
+            var posZ = centerPosition[2];
+
+            if(posX == (this.windowSize * this.numWindowsA / 2)) {
+
+                window.setScale(1,-1,1);
+
+            } else if(posZ == -(this.windowSize * this.numWindowsA / 2)) {
 
                 window.setScale(1,-1,1);
             }
-
-            */
 
             windows.addChildren(window);
 
@@ -240,15 +245,24 @@ class Building {
             if(cp1[0] == cp2[0]) {
 
                 zRotation = true;
+                xRotation = false;
 
             } else {
 
                 xRotation = true;
+                zRotation = false;
             }
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
 
-            if(centerPosition[0]>centerPosition[2]) {
+            var posX = centerPosition[0];
+            var posZ = centerPosition[2];
+
+            if(posX == (this.windowSize * (this.numWindowsA-2) / 2)) {
+
+                window.setScale(1,-1,1);
+
+            } else if(posZ == -(this.windowSize * (this.numWindowsA-2) / 2)) {
 
                 window.setScale(1,-1,1);
             }
