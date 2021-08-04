@@ -269,6 +269,151 @@
 
         </script>
 
+        <!-- Vertex Shader (Terrain) -->
+
+        <script id="shader-vs-terrain" type="x-shader/x-vertex">
+
+            precision highp float;
+
+            attribute vec3 aVertexPosition;
+            attribute vec3 aVertexNormal;
+            attribute vec2 aVertexUv; // aTextureCoordinate
+
+            uniform mat4 modelMatrix;            
+            uniform mat4 viewMatrix;
+            uniform mat4 projMatrix;
+            uniform mat4 normalMatrix;
+
+            varying vec3 vPosWorld; 
+            varying vec3 vNormal;
+            varying vec2 vUv; // vTextureCoordinate
+
+            varying vec3 vLighting;
+            
+            void main(void) {
+
+                vPosWorld=(modelMatrix*vec4(aVertexPosition,1.0)).xyz; // position in world coordinates
+                vNormal=(normalMatrix*vec4(aVertexNormal,1.0)).xyz; // normal in world coordinates
+                
+                gl_Position = projMatrix * viewMatrix * vec4(vPosWorld, 1.0);
+
+                vUv = aVertexUv; // pass the texture coordinate to the fragment shader
+
+                vec3 ambientLight = vec3(0.8, 0.8, 0.8);
+                vec3 directionalLightColor = vec3(1.0, 1.0, 1.0);
+                vec3 directionalVector = normalize(vec3(1.0, 0.0, 1.0));
+                float directional = max(dot(vNormal.xyz, directionalVector), 0.0);
+                vLighting = ambientLight + (directionalLightColor * directional);
+            }
+
+        </script>
+
+        <!-- Fragment Shader (Terrain) -->
+
+        <script id="shader-fs-terrain" type="x-shader/x-fragment">
+            
+            precision highp float;
+
+            uniform sampler2D uSamplerGrass; // uTexture1
+            uniform sampler2D uSamplerMoss; // uTexture2
+            uniform sampler2D uSamplerSandyGravel; // uTexture3
+            
+            varying vec3 vPosWorld;
+            varying vec3 vNormal;
+            varying vec2 vUv; // vTextureCoordinate
+
+            varying vec3 vLighting;
+
+            vec3 mod289(vec3 x); //https://github.com/ashima/webgl-noise
+            vec2 mod289(vec2 x); //https://github.com/ashima/webgl-noise
+            vec3 permute(vec3 x); //https://github.com/ashima/webgl-noise
+            float snoise(vec2 v); //https://github.com/ashima/webgl-noise
+            
+            void main(void) {
+
+                vec3 pixelColorGrass = (texture2D(uSamplerGrass, vUv*140.0)).xyz;
+                vec3 pixelColorMoss = (texture2D(uSamplerMoss, vUv*120.0)).xyz;
+                vec3 pixelColorSandyGravel = (texture2D(uSamplerSandyGravel, vUv*110.0)).xyz;
+
+                float noise1a = snoise(vUv*45.0);
+                float noise1b = snoise(vUv*55.0);
+                float mask1 = mix(noise1a, noise1b, 0.6);
+
+                float noise2a = snoise(vUv*101.0);
+                float noise2b = snoise(vUv*70.0);
+                float mask2 = mix(noise2a, noise2b, 0.4);
+
+                vec3 pixelColor = mix(pixelColorGrass, pixelColorMoss, mask1);
+                
+                pixelColor = mix(pixelColor, pixelColorSandyGravel, mask2);
+                
+                gl_FragColor = vec4(pixelColor * vLighting, 1.0);
+            }
+
+            vec3 mod289(vec3 x) {
+                
+                return x - floor(x * (1.0 / 289.0)) * 289.0;
+            }
+            
+            vec2 mod289(vec2 x) {
+                
+                return x - floor(x * (1.0 / 289.0)) * 289.0;
+            }
+            
+            vec3 permute(vec3 x) {
+                
+                return mod289(((x*34.0)+1.0)*x);
+            }
+            
+            float snoise(vec2 v) {
+
+                // Precompute values for skewed triangular grid
+                const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                // ( (3.0-sqrt(3.0))/6.0 , 0.5*(sqrt(3.0)-1.0) , -1.0 + 2.0 * C.x , 1.0 / 41.0 )
+                                    
+                // First corner (x0)
+                vec2 i  = floor(v + dot(v, C.yy));
+                vec2 x0 = v - i + dot(i, C.xx);
+            
+                // Other two corners (x1, x2)
+                vec2 i1 = vec2(0.0);
+                i1 = (x0.x > x0.y)? vec2(1.0, 0.0):vec2(0.0, 1.0);
+                vec2 x1 = x0.xy + C.xx - i1;
+                vec2 x2 = x0.xy + C.zz;
+            
+                // Do some permutations to avoid
+                // truncation effects in permutation
+                i = mod289(i);
+                vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+            
+                vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x1,x1), dot(x2,x2)), 0.0);
+                
+                m = m*m ;
+                m = m*m ;
+            
+                // Gradients:
+                //  41 pts uniformly over a line, mapped onto a diamond
+                //  The ring size 17*17 = 289 is close to a multiple of 41 (41*7 = 287)
+            
+                vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                vec3 h = abs(x) - 0.5;
+                vec3 ox = floor(x + 0.5);
+                vec3 a0 = x - ox;
+            
+                // Normalise gradients implicitly by scaling m
+                // Approximation of: m *= inversesqrt(a0*a0 + h*h);
+                m *= 1.79284291400159 - 0.85373472095314 * (a0*a0+h*h);
+            
+                // Compute final noise value at P
+                vec3 g = vec3(0.0);
+                g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                g.yz = a0.yz * vec2(x1.x,x2.x) + h.yz * vec2(x1.y,x2.y);
+                return 130.0 * dot(m, g);
+            }
+
+        </script>
+        
+
         <!-- WebGL -->
         
         <script>
@@ -284,8 +429,6 @@
 
             var vertexShader = null;
             var fragmentShader = null;
-
-            //==========================================
 
             // =============================
             //     normal shader
@@ -320,7 +463,24 @@
             var uSamplerCubeUniformRM = null;
             var worldCameraPositionUniformRM = null;
 
-            //==========================================
+            // =============================
+            //        terrain shader
+            // =============================
+
+            var modelMatrixUniformT = null;
+            var viewMatrixUniformT = null;
+            var projMatrixUniformT = null;
+            var normalMatrixUniformT = null;
+
+            var vertexPositionAttributeT = null;
+            var vertexNormalAttributeT = null;
+            var textureCoordAttributeT = null;
+
+            var uSamplerGrassUniformT = null;
+            var uSamplerMossUniformT = null;
+            var uSamplerSandyGravelUniformT = null;
+
+            // =============================
 
             var trianglesVerticeBuffer = null;
             var trianglesNormalBuffer = null;
@@ -329,8 +489,9 @@
 
             glProgram = null;
             glProgramReflectionMap = null;
+            glProgramTerrain = null;
 
-            //==========================================
+            // =============================
             
             var initialModelMatrix = mat4.create();
             var initialColor = vec4.fromValues(1.0,1.0,1.0,1.0);
@@ -339,16 +500,14 @@
             var viewMatrix = mat4.create();
             var projMatrix = mat4.create();
 
-           //==========================================
+            // =============================
             
             var vPosWorld = null;
             var vNormal = null;
             
-            //==========================================
-
-            // key press variables
-
-            //==========================================
+            // =============================
+            //     key press variables
+            // =============================
 
             var initialPlatformHeight = 1.5; // initial height (modifHeightPiezaB + modifHeightPiezaC) between 0 and 2
             var initialCabinRotation = 0; // initial angle
@@ -383,20 +542,19 @@
 
             var cabinHeight;
 
-            //==========================================
+            // =============================
 
             var cranePosition = [28,0,6];
 
-            //==========================================
-
-            // objects in scene
-            // crane, floor, sky, sun (?)
-            let objects = [];
-
+            // =============================
+            
+            let floor = null;
+            let crane = null;
             let building = null;
             let slide = null;
+            let monolith = null;
 
-            //===================
+            // =============================
 
             let orbitalCam = null;
             let droneCam = null;
@@ -404,15 +562,15 @@
             let currentCam = null;
             let craneControls = null;
 
-            //===================
+            // =============================
 
             let textures = new Map();
 
             let cubeMapFaces = new Map();
 
-            //===================
-            
-            // WebGL Initialization
+            // =============================
+            //     WebGL Initialization
+            // =============================
          
             function initWebGL(){
 
@@ -519,6 +677,33 @@
                 
                 //use program
                 gl.useProgram(glProgramReflectionMap);
+
+                // =============================
+                //        terrain shader
+                // =============================
+
+                // get shader source
+                var fs_source_t = document.getElementById('shader-fs-terrain').innerHTML;
+                var vs_source_t = document.getElementById('shader-vs-terrain').innerHTML;
+
+                // compile shaders
+                vertexShader = makeShader(vs_source_t, gl.VERTEX_SHADER);
+                fragmentShader = makeShader(fs_source_t, gl.FRAGMENT_SHADER);
+                
+                // create program
+                glProgramTerrain = gl.createProgram();
+                
+                // attach and link shaders to the program
+                gl.attachShader(glProgramTerrain, vertexShader);
+                gl.attachShader(glProgramTerrain, fragmentShader);
+                gl.linkProgram(glProgramTerrain);
+
+                if (!gl.getProgramParameter(glProgramTerrain, gl.LINK_STATUS)) {
+                    alert("Unable to initialize the terrain shader program.");
+                }
+                
+                //use program
+                gl.useProgram(glProgramTerrain);
             }
             
             function makeShader(src, type){
@@ -573,6 +758,24 @@
                 gl.uniformMatrix4fv(viewMatrixUniformRM, false, viewMatrix);
                 gl.uniformMatrix4fv(projMatrixUniformRM, false, projMatrix);
                 gl.uniformMatrix4fv(normalMatrixUniformRM, false, initialNormalMatrix);
+
+                // =============================
+                //        terrain shader
+                // =============================
+
+                gl.useProgram(glProgramTerrain);
+
+                // uniform variables are references to variables inside the shaders
+                modelMatrixUniformT = gl.getUniformLocation(glProgramTerrain, "modelMatrix");
+                viewMatrixUniformT  = gl.getUniformLocation(glProgramTerrain, "viewMatrix");
+                projMatrixUniformT  = gl.getUniformLocation(glProgramTerrain, "projMatrix");
+                normalMatrixUniformT  = gl.getUniformLocation(glProgramTerrain, "normalMatrix");
+                
+                // overwriting the shader variables with those within the context of glProgramTerrain
+                gl.uniformMatrix4fv(modelMatrixUniformT, false, initialModelMatrix);
+                gl.uniformMatrix4fv(viewMatrixUniformT, false, viewMatrix);
+                gl.uniformMatrix4fv(projMatrixUniformT, false, projMatrix);
+                gl.uniformMatrix4fv(normalMatrixUniformT, false, initialNormalMatrix);
             }
             
             function setupFragmentShaderMatrix() {
@@ -600,11 +803,26 @@
 
                 worldCameraPositionUniformRM = gl.getUniformLocation(glProgramReflectionMap, 'worldCameraPosition');
                 gl.uniform3fv(worldCameraPositionUniformRM, vec3.fromValues(0,0,0));
+
+                // =============================
+                //        terrain shader
+                // =============================
+
+                gl.useProgram(glProgramTerrain);
+
+                uSamplerGrassUniformT = gl.getUniformLocation(glProgramTerrain, 'uSamplerGrass');
+                gl.uniform1i(uSamplerGrassUniformT, null);
+
+                uSamplerMossUniformT = gl.getUniformLocation(glProgramTerrain, 'uSamplerMoss');
+                gl.uniform1i(uSamplerMossUniformT, null);
+
+                uSamplerSandyGravelUniformT = gl.getUniformLocation(glProgramTerrain, 'uSamplerSandyGravel');
+                gl.uniform1i(uSamplerSandyGravelUniformT, null);
             }
             
             function loadCubeMapTextures() {
 
-                
+                gl.useProgram(glProgramReflectionMap);
 
                 // Create a texture.
                 var texture = gl.createTexture();
@@ -723,17 +941,18 @@
                 var floorWidth = 500;
                 //var floorColor = vec4.fromValues(0.335,0.488,0.273,1.0);
                 var floorColor = vec4.fromValues(1.0,1.0,1.0,1.0);
-                var floor = new Square(2,2,floorWidth,floorColor,vec2.fromValues(50,50),"texturas/Grass01_2K_BaseColor_resultado.jpg");
+                floor = new Square(2,2,floorWidth,floorColor,vec2.fromValues(50,50),"texturas/Grass01_2K_BaseColor_resultado.jpg");
+                floor.setTerrain();
 
                 // 2001 monolith
                 var monilithWidth = 2;
                 var monolithColor = vec4.fromValues(0.05,0.05,0.05,1);
-                var monolith = new Cube(cubeRows, cubeColumns, monilithWidth, monolithColor);
+                monolith = new Cube(cubeRows, cubeColumns, monilithWidth, monolithColor);
                 monolith.setTranslation(-40,monilithWidth*5/2,-20);
                 monolith.setScale(1,5,2);
                
                 // crane
-                var crane = new Object3D();
+                crane = new Object3D();
                 crane.setTranslation(cranePosition[0], cranePosition[1], cranePosition[2]);
 
                 //  pieza A
@@ -948,10 +1167,6 @@
                 cable4.setTranslation(-0.7,-8/2+0.5,-0.7);
                 cable4.setRotation(-0.18,0,0.18);
 
-                objects.push(floor);
-                objects.push(crane);
-                objects.push(monolith);
-
                 building = new Building();
 
                 var slideColor = vec4.fromValues(1.0,0.5,0.0,1.0);
@@ -962,16 +1177,12 @@
 
                 setupVertexShaderMatrix();
 
-                for (let index = 0; index < objects.length; index++) {
-                    
-                    objects[index].draw(mat4.create());
-                }
-
+                floor.draw();
+                crane.draw();
                 building.draw();
                 slide.draw();
+                monolith.draw();
             }
-
-            
             
             function tick(){
     
