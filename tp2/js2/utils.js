@@ -2,7 +2,7 @@
 // triangleStripMesh : container with the 4 buffers (position, normal, uv and index)
 function drawTriangleStripMesh(triangleStripMesh, isReflective, isTerrain) {
 
-    var modo = "edges";
+    var mode = "smooth";
     
     if(isReflective) {
 
@@ -27,13 +27,13 @@ function drawTriangleStripMesh(triangleStripMesh, isReflective, isTerrain) {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
 
-        if (modo!="wireframe"){
+        if (mode!="wireframe"){
     
             //gl.uniform1i(glProgramReflectionMap.useLightingUniform,(lighting=="true"));                    
             gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
         }
 
-        if (modo!="smooth") {
+        if (mode!="smooth") {
             
             //gl.uniform1i(glProgramReflectionMap.useLightingUniform,false);
             gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -65,13 +65,13 @@ function drawTriangleStripMesh(triangleStripMesh, isReflective, isTerrain) {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
 
-        if (modo!="wireframe"){
+        if (mode!="wireframe"){
     
             //gl.uniform1i(glProgram.useLightingUniform,(lighting=="true"));                    
             gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
         }
 
-        if (modo!="smooth") {
+        if (mode!="smooth") {
             
             //gl.uniform1i(glProgram.useLightingUniform,false);
             gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
@@ -102,13 +102,13 @@ function drawTriangleStripMesh(triangleStripMesh, isReflective, isTerrain) {
 
         gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
 
-        if (modo!="wireframe"){
+        if (mode!="wireframe"){
     
             //gl.uniform1i(glProgram.useLightingUniform,(lighting=="true"));                    
             gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
         }
 
-        if (modo!="smooth") {
+        if (mode!="smooth") {
             
             //gl.uniform1i(glProgram.useLightingUniform,false);
             gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
