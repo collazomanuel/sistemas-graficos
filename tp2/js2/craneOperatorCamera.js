@@ -19,4 +19,9 @@ function CraneOperatorCameraControl(initialPos){
 		mat4.lookAt(craneOperatorCamViewMatrix, from, to, up);
         return craneOperatorCamViewMatrix;
     }
+
+	this.getPosition = function(){
+
+		return from;
+	}
 }

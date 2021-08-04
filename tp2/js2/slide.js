@@ -125,8 +125,13 @@ class SlideSection extends Object3D {
         slideSweep.loadControlPoints(this.getRouteControlPoints());
         var slideDeltaSweep = 0.01;
 
-        this.sweptSurface = new SlideSurface(slideForm,slideSweep,slideDeltaForm,slideDeltaSweep);
-        this.triangleStripMesh = this.sweptSurface.setupBuffers();
+        var slideTopSurface = new SlideTopSurface(this.height, this.width, this.color, slideForm, slideSweep);
+        var slideBottomSurface = new SlideBottomSurface(this.height, this.width, this.color, slideForm, slideSweep);
+
+        this.addChildren(slideTopSurface);
+        this.addChildren(slideBottomSurface);
+
+
 
         // add 2 poles
         var poleColor = vec4.fromValues(1.0,1.0,1.0,1.0);
@@ -143,5 +148,81 @@ class SlideSection extends Object3D {
         pole2.setTranslation(0, 1/2, 0);
         pole2.setTranslation(-this.width,0,0);
         this.addChildren(pole2);
+    }
+
+
+}
+
+class SlideTopSurface extends Object3D {
+
+    constructor(height,width,color, form, sweep){
+        
+        super();
+
+        this.height = height;
+        this.width = width;
+        this.color = color;
+
+        this.form = form;
+        this.sweep = sweep;
+
+        this.sweptSurface = null;
+        
+        this.initializeObject();
+    }
+
+    initializeObject() {
+
+        var slideTopSurface = new SlideSurface(this.form, this.sweep, 0.01, 0.01);
+        this.sweptSurface = slideTopSurface;
+        this.triangleStripMesh = slideTopSurface.setupBuffers();
+    }
+}
+
+class SlideBottomSurface extends Object3D {
+
+    constructor(height,width,color, form, sweep){
+        
+        super();
+
+        this.height = height;
+        this.width = width;
+        this.color = color;
+
+        this.form = form;
+        this.sweep = sweep;
+
+        this.sweptSurface = null;
+    
+        this.initializeObject();
+    }
+
+    initializeObject() {
+        
+        var alteredControlPoints = [];
+
+        var controlPoints = (this.form).getControlPoints();
+        
+        for (let i = 0; i < 4; i++) {
+
+            if((i==0) || (i==3)) {
+
+                alteredControlPoints[i] = vec3.fromValues((controlPoints[i])[0],0,(controlPoints[i])[2]);
+
+            } else {
+                
+                alteredControlPoints[i] = vec3.fromValues((controlPoints[i])[0],0,((controlPoints[i])[2])-0.2);
+            }
+            
+        }
+
+        var alteredForm = new CubicBezier();
+        alteredForm.loadControlPoints(alteredControlPoints);
+
+        var slideBottomSurface = new SlideSurface(alteredForm, this.sweep, 0.01, 0.01);
+        
+        slideBottomSurface.setInvertNormal();
+        this.sweptSurface = slideBottomSurface;
+        this.triangleStripMesh = slideBottomSurface.setupBuffers();
     }
 }

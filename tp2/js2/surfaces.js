@@ -54,8 +54,8 @@ class CylinderWithoutLidsSurface {
 
     getNormal(u,v){
 
-        var du = 0.0001;
-        var dv = 0.0001;
+        var du = 0.001;
+        var dv = 0.001;
         var v1 = this.getPosition(u + du, v);
         var v2 = this.getPosition(u, v + dv);
 
@@ -124,7 +124,7 @@ class SphereSurface {
     }
 }
 
-function setupBuffersBySurface(surface, rows, columns, textureScale){
+function setupBuffersBySurface(surface, rows, columns, textureScale = vec2.fromValues(1.0,1.0)){
 
     if(textureScale == null) {
 
@@ -151,6 +151,8 @@ function setupBuffersBySurface(surface, rows, columns, textureScale){
 			positionBuffer.push(pos[2]);
 
 			var nrm = surface.getNormal(u,v);
+
+            vec3.normalize(nrm, nrm);
 
 			normalBuffer.push(nrm[0]);
 			normalBuffer.push(nrm[1]);

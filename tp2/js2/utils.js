@@ -1,47 +1,93 @@
 
 // triangleStripMesh : container with the 4 buffers (position, normal, uv and index)
-function drawTriangleStripMesh(triangleStripMesh) {
+function drawTriangleStripMesh(triangleStripMesh, isReflective) {
 	
-	// buffer setup
+    if(triangleStripMesh == null) {
 
-    var modo = "edges";
+        console.log("goal");
+    }
 
-    vertexPositionAttribute = gl.getAttribLocation(glProgram, "aVertexPosition");
-    gl.enableVertexAttribArray(vertexPositionAttribute);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_position_buffer);
-    gl.vertexAttribPointer(vertexPositionAttribute, triangleStripMesh.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    textureCoordAttribute = gl.getAttribLocation(glProgram, "aVertexUv");
-    gl.enableVertexAttribArray(textureCoordAttribute);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_uvs_buffer);
-    gl.vertexAttribPointer(textureCoordAttribute, triangleStripMesh.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
-
-    vertexNormalAttribute = gl.getAttribLocation(glProgram, "aVertexNormal");
-    gl.enableVertexAttribArray(vertexNormalAttribute);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_normal_buffer);
-    gl.vertexAttribPointer(vertexNormalAttribute, triangleStripMesh.webgl_normal_buffer.itemSize, gl.FLOAT, false, 0, 0);
+	var modo = "edges";
     
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    if(isReflective) {
 
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
+        // buffer setup
 
-    if (modo!="wireframe"){
-  
-        //gl.uniform1i(glProgram.useLightingUniform,(lighting=="true"));                    
-        gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
+        vertexPositionAttributeRM = gl.getAttribLocation(glProgramReflectionMap, "aVertexPosition");
+        gl.enableVertexAttribArray(vertexPositionAttributeRM);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_position_buffer);
+        gl.vertexAttribPointer(vertexPositionAttributeRM, triangleStripMesh.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
 
-    if (modo!="smooth") {
+        textureCoordAttributeRM = gl.getAttribLocation(glProgramReflectionMap, "aVertexUv");
+        gl.enableVertexAttribArray(textureCoordAttributeRM);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_uvs_buffer);
+        gl.vertexAttribPointer(textureCoordAttributeRM, triangleStripMesh.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        vertexNormalAttributeRM = gl.getAttribLocation(glProgramReflectionMap, "aVertexNormal");
+        gl.enableVertexAttribArray(vertexNormalAttributeRM);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_normal_buffer);
+        gl.vertexAttribPointer(vertexNormalAttributeRM, triangleStripMesh.webgl_normal_buffer.itemSize, gl.FLOAT, false, 0, 0);
         
-        //gl.uniform1i(glProgram.useLightingUniform,false);
-        gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
-    }
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
+
+        if (modo!="wireframe"){
+    
+            //gl.uniform1i(glProgramReflectionMap.useLightingUniform,(lighting=="true"));                    
+            gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        if (modo!="smooth") {
+            
+            //gl.uniform1i(glProgramReflectionMap.useLightingUniform,false);
+            gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+            
+    } else {
+
+        // buffer setup
+
+        vertexPositionAttribute = gl.getAttribLocation(glProgram, "aVertexPosition");
+        gl.enableVertexAttribArray(vertexPositionAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_position_buffer);
+        gl.vertexAttribPointer(vertexPositionAttribute, triangleStripMesh.webgl_position_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        textureCoordAttribute = gl.getAttribLocation(glProgram, "aVertexUv");
+        gl.enableVertexAttribArray(textureCoordAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_uvs_buffer);
+        gl.vertexAttribPointer(textureCoordAttribute, triangleStripMesh.webgl_uvs_buffer.itemSize, gl.FLOAT, false, 0, 0);
+
+        vertexNormalAttribute = gl.getAttribLocation(glProgram, "aVertexNormal");
+        gl.enableVertexAttribArray(vertexNormalAttribute);
+        gl.bindBuffer(gl.ARRAY_BUFFER, triangleStripMesh.webgl_normal_buffer);
+        gl.vertexAttribPointer(vertexNormalAttribute, triangleStripMesh.webgl_normal_buffer.itemSize, gl.FLOAT, false, 0, 0);
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleStripMesh.webgl_index_buffer);
+
+        if (modo!="wireframe"){
+    
+            //gl.uniform1i(glProgram.useLightingUniform,(lighting=="true"));                    
+            gl.drawElements(gl.TRIANGLE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        if (modo!="smooth") {
+            
+            //gl.uniform1i(glProgram.useLightingUniform,false);
+            gl.drawElements(gl.LINE_STRIP, triangleStripMesh.webgl_index_buffer.numItems, gl.UNSIGNED_SHORT, 0);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, null);
+    }
 }
 
 // set the shader matrix to transform the vertices
-function setShaderMatrix(mMatrix, color, texture) {
+function setShaderMatrix(mMatrix, color, texture, isReflective) {
 
     // clear back buffer
 	//gl.enable(gl.CULL_FACE);
@@ -49,29 +95,43 @@ function setShaderMatrix(mMatrix, color, texture) {
     //gl.clearColor(0,0,0,1);
     //gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
     
-    gl.useProgram(glProgram);
+    if(isReflective) {
 
-    var normalMatrix = glMatrix.mat4.clone(mMatrix);
-	mat4.invert(normalMatrix,normalMatrix);
-	mat4.transpose(normalMatrix,normalMatrix);
+        gl.useProgram(glProgramReflectionMap);
 
-    gl.uniformMatrix4fv(modelMatrixUniform, false, mMatrix);
-	gl.uniformMatrix4fv(normalMatrixUniform, false, normalMatrix);
-	gl.uniform4fv(colorUniform, color);
+        var normalMatrix = glMatrix.mat4.clone(mMatrix);
+        mat4.invert(normalMatrix,normalMatrix);
+        mat4.transpose(normalMatrix,normalMatrix);
 
+        gl.uniformMatrix4fv(modelMatrixUniformRM, false, mMatrix);
+        gl.uniformMatrix4fv(normalMatrixUniformRM, false, normalMatrix);
 
-    // TEST TEXTURE ===================================
-
-    if(texture != null) {
-
-        // Tell WebGL we want to affect texture unit 0
         gl.activeTexture(gl.TEXTURE0);
+        //gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        gl.uniform1i(uSamplerCubeUniformRM, 0);
 
-        // Bind the texture to texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, texture);
+    } else {
 
-        gl.uniform1i(uSamplerUniform, 0);
+        gl.useProgram(glProgram);
+
+        var normalMatrix = glMatrix.mat4.clone(mMatrix);
+        mat4.invert(normalMatrix,normalMatrix);
+        mat4.transpose(normalMatrix,normalMatrix);
+
+        gl.uniformMatrix4fv(modelMatrixUniform, false, mMatrix);
+        gl.uniformMatrix4fv(normalMatrixUniform, false, normalMatrix);
+
+        gl.uniform4fv(colorUniform, color);
+
+        if(texture != null) {
     
+            // Tell WebGL we want to affect texture unit 0
+            gl.activeTexture(gl.TEXTURE0);
+            // Bind the texture to texture unit 0
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.uniform1i(uSamplerUniform, 0);
+        
+        }
     }
 
     // ================================================

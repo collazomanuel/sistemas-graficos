@@ -1,3 +1,4 @@
+
 function OrbitalCameraControl(initialPos){
 
     if (!initialPos) {
@@ -19,10 +20,27 @@ function OrbitalCameraControl(initialPos){
     let eyePosition = initialPos;
     let targetPosition = [0, 5, 0];
 
+    let mouseDown = false;
+
+    document.addEventListener("mousedown", function() {
+
+        mouseDown = true;
+
+    });
+
+    document.addEventListener("mouseup", function() {
+
+        mouseDown = false;
+
+    });
+
     document.addEventListener("mousemove", function(e) {
         
-        mousePosition.x = e.clientX; 
-	    mousePosition.y = e.clientY;
+        if(mouseDown) {
+
+            mousePosition.x = e.clientX; 
+	        mousePosition.y = e.clientY;
+        }        
     });
 
     this.update = function() {
@@ -57,4 +75,9 @@ function OrbitalCameraControl(initialPos){
         mat4.lookAt(orbitalCamViewMatrix, eyePosition, targetPosition, up);
         return orbitalCamViewMatrix;
     }
+
+    this.getPosition = function(){
+
+		return eyePosition;
+	}
 }

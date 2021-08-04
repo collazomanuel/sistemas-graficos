@@ -373,6 +373,11 @@ class CubicBezier extends Sweep {
 		this.controlPoints = points;
 	}
 
+	getControlPoints() {
+
+		return this.controlPoints;
+	}
+
 	getNumControlPoints() {
 
 		return (this.controlPoints).length;
@@ -510,6 +515,10 @@ class CubicBezier extends Sweep {
 		vec3.cross(normalVector, tangentVector, binormalVector);
 		vec3.normalize(normalVector, normalVector);
 
+		//return normalVector;
+
+		vec3.cross(normalVector, tangentVector, this.getSecondDerivativeVectorAt(u));
+		vec3.normalize(normalVector, normalVector);
 		return normalVector;
 	}
 
@@ -542,7 +551,9 @@ class CubicBezier extends Sweep {
 
 		vec3.normalize(secondDerivativeVector, secondDerivativeVector);
 
-		return secondDerivativeVector; // vec3
+		//return secondDerivativeVector; // vec3
+
+		return vec3.fromValues(0,1,0);
 	}	
 
 	getBinormalVectorAt(u) {
@@ -733,7 +744,7 @@ class QuadraticBSpline extends Sweep {
 		vec3.normalize(binormalVector, binormalVector);
 
 		// HARDCODEO
-		return vec3.fromValues(0,-1,0);
+		return vec3.fromValues(0,1,0);
 
 		//return binormalVector;
 	}

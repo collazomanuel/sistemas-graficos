@@ -21,6 +21,13 @@ class Object3D {
         this.texture = null;
         this.textureURL = null;
         this.textureScale = vec2.create();
+
+        this.isReflective = false;
+    }
+
+    setReflective() {
+
+        this.isReflective = true;
     }
 
     resetModelMatrix() {
@@ -62,10 +69,19 @@ class Object3D {
 		mat4.multiply(m, parentMatrix, this.modelMatrix);
         // m is now the model matrix relative to the world
 
-        if (this.triangleStripMesh){
-			setShaderMatrix(m, this.color, this.texture);
-			drawTriangleStripMesh(this.triangleStripMesh);
-		}
+        if(this.triangleStripMesh) {
+
+            if(this.isReflective) {
+
+                setShaderMatrix(m, this.color, this.texture, true, glProgramReflectionMap);
+                drawTriangleStripMesh(this.triangleStripMesh, true);
+    
+            } else {
+    
+                setShaderMatrix(m, this.color, this.texture, false, glProgram);
+                drawTriangleStripMesh(this.triangleStripMesh, false);
+            }
+        }
 
 		for (var i = 0; i < this.children.length; i++){
 			this.children[i].draw(m);
@@ -130,7 +146,7 @@ class Tile extends Object3D {
     initializeObject() {
 
         var tileSweep = new StraightLine();
-        tileSweep.setControlPoints([0,0,0], [0,0.2,0]);
+        tileSweep.setControlPoints([0,0,0], [0,0.3,0]);
 
         var tileDeltaForm = 0.01;
         var tileDeltaSweep = 0.5;
@@ -189,6 +205,8 @@ class Cube extends Object3D {
 
     initializeObject() {
 
+        // test
+
         this.triangleStripMesh = null;
 
         var alteredTextureScale = vec2.fromValues(this.textureScale[1], this.textureScale[0]);
@@ -198,12 +216,14 @@ class Cube extends Object3D {
         this.children.push(cara1);
        
         var cara2 = new Square(this.rows,this.columns,this.lado,this.color,this.textureScale,this.textureURL);
-        cara2.setTranslation(0,-this.lado/2,0.0);
+        cara2.setScale(1,-1,1);
+        cara2.setTranslation(0,this.lado/2,0.0);
         this.children.push(cara2);
 
         var cara3 = new Square(this.rows,this.columns,this.lado,this.color,alteredTextureScale,this.textureURL);
         cara3.setRotation(0,0,Math.PI/2.0);
-        cara3.setTranslation(0,-this.lado/2,0);
+        cara3.setScale(1,-1,1);
+        cara3.setTranslation(0,this.lado/2,0);
         this.children.push(cara3);
 
         var cara4 = new Square(this.rows,this.columns,this.lado,this.color,alteredTextureScale,this.textureURL);
@@ -213,7 +233,8 @@ class Cube extends Object3D {
 
         var cara5 = new Square(this.rows,this.columns,this.lado,this.color,this.textureScale,this.textureURL);
         cara5.setRotation(Math.PI/2.0,0,0);
-        cara5.setTranslation(0,-this.lado/2,0);
+        cara5.setScale(1,-1,1);
+        cara5.setTranslation(0,this.lado/2,0);
         this.children.push(cara5);
 
         var cara6 = new Square(this.rows,this.columns,this.lado,this.color,this.textureScale,this.textureURL);

@@ -99,6 +99,11 @@ class Building {
         var windowColor = vec4.fromValues(0.7,0.7,0.6,1.0);
 
         for (let i = 0; i < this.numOfControlPoints1; i++) {
+
+            var pane = new Cube(2,2,0.2,vec4.fromValues(0.15,0.15,0.14,1.0));
+            pane.setTranslation(this.controlPoints1[i][0], 1, this.controlPoints1[i][2]);
+            pane.setScale(1,10,1);
+            windows.addChildren(pane);
             
             // add each window
 
@@ -123,6 +128,7 @@ class Building {
             vec3.add(centerPosition, centerPosition, vec3.fromValues(0,this.windowSize/2,0));
 
             var window = new Square(2,2,this.windowSize,windowColor);
+            window.setReflective();
 
             // translation
             window.setTranslation(centerPosition[0], centerPosition[1], centerPosition[2]);
@@ -139,7 +145,13 @@ class Building {
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
 
+            if(centerPosition[0]>centerPosition[2]) {
+
+                window.setScale(1,-1,1);
+            }  
+
             windows.addChildren(window);
+
         }
 
         this.firstSectionFloor.addChildren(windows);
@@ -185,6 +197,11 @@ class Building {
         var windowColor = vec4.fromValues(0.7,0.7,0.6,1.0);
 
         for (let i = 0; i < this.numOfControlPoints2; i++) {
+
+            var pane = new Cube(2,2,0.2,vec4.fromValues(0.15,0.15,0.14,1.0));
+            pane.setTranslation(this.controlPoints2[i][0], 1, this.controlPoints2[i][2]);
+            pane.setScale(1,10,1);
+            windows.addChildren(pane);
             
             // add each window
 
@@ -201,11 +218,6 @@ class Building {
             } else {
 
                 cp2 = this.controlPoints2[i+1];
-
-                if(this.controlPoints2.length != this.numOfControlPoints2) {
-
-                    console.log("yey");
-                }
             }
 
             var centerPosition = vec3.create();
@@ -214,6 +226,7 @@ class Building {
             vec3.add(centerPosition, centerPosition, vec3.fromValues(0,this.windowSize/2,0));
 
             var window = new Square(2,2,this.windowSize,windowColor);
+            window.setReflective();
 
             // translation
             window.setTranslation(centerPosition[0], centerPosition[1], centerPosition[2]);
@@ -229,6 +242,11 @@ class Building {
             }
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
+
+            if(centerPosition[0]>centerPosition[2]) {
+
+                window.setScale(1,-1,1);
+            }
 
             windows.addChildren(window);
         }
@@ -274,7 +292,7 @@ class Building {
             var position = vec3.create();
             var normal = vec3.create();
             
-            vec3.scale(normal, curveNormal, deltaNormal);
+            vec3.scale(normal, curveNormal, -deltaNormal);
             vec3.add(position, curvePosition, normal);
             columnsPositions.push(position);
         }
@@ -334,12 +352,12 @@ class Building {
         // paso 4: dibujar pisos seccion 2
         var m2 = mat4.create();
 
-        var translation = vec3.fromValues(0,floorHeight,0);
+        var translation = vec3.fromValues(0,floorHeight-0.2,0);
         mat4.fromTranslation(m2, translation);
         
         for (let i = 0; i < this.numFloorsSecondSection; i++) {
             
-            var translation = vec3.fromValues(0,floorHeight,0);
+            var translation = vec3.fromValues(0,floorHeight-0.2,0);
             mat4.fromTranslation(m2, translation);
             mat4.scale(m2, m2, vec3.fromValues(0.75,1.0,0.75));
 
@@ -360,7 +378,7 @@ class Building {
         // paso 6: dibujar ascensor
         var lifterHeight = 2 + baseHeight + 2.0*(this.numFloorsFirstSection+this.numFloorsSecondSection);
         var lifterWidth = 3;
-        var lifter = new Cube(2,2,1,vec4.fromValues(0.5,0.5,0.5,1));
+        var lifter = new Cube(2,2,1,vec4.fromValues(1.0,0.9882,0.9412,1));
         var mLifter = mat4.create();
         mat4.fromTranslation(mLifter, vec3.fromValues(0, lifterHeight/2,0));
         mat4.scale(mLifter, mLifter, vec3.fromValues(lifterWidth,lifterHeight,lifterWidth));
