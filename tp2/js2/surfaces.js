@@ -45,21 +45,20 @@ class CylinderWithoutLidsSurface {
     
     getPosition(u,v){
 
-        var z = Math.cos(2*u*Math.PI) * this.radius;
         var x = Math.sin(2*u*Math.PI) * this.radius;
         var y = (v-0.5) * this.height;
+        var z = Math.cos(2*u*Math.PI) * this.radius;
         
         return [x,y,z];
     }
 
     getNormal(u,v){
 
-        var du = 0.001;
-        var dv = 0.001;
-        var v1 = this.getPosition(u + du, v);
-        var v2 = this.getPosition(u, v + dv);
+        var position = this.getPosition(u,v);
+        position[1] = 0;
+        vec3.normalize(position,position);
 
-        return this.productoVectorial(v1, v2);
+        return position
     }
 
     getTextureCoordinates(u,v){
