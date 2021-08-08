@@ -24,14 +24,15 @@ class Building {
 
         this.numColumns = 10;
 
-        this.firstSectionFloor; // Object3D
-        this.secondSectionFloor; // Object3D
-
         this.controlPoints1 = getControlPoints(this.numWindowsA, this.numWindowsB, this.windowSize);
         this.controlPointsRandom1 = getControlPointsRandom(this.numWindowsA, this.numWindowsB, this.windowSize);
 
         this.controlPoints2 = getControlPoints(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
         this.controlPointsRandom2 = getControlPointsRandom(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
+
+        this.objects = null;
+
+        this.hasChanged = true; // first
     }
 
     setNumWindowsA(num) {
@@ -49,6 +50,8 @@ class Building {
         this.controlPointsRandom1 = getControlPointsRandom(this.numWindowsA, this.numWindowsB, this.windowSize);
         this.controlPoints2 = getControlPoints(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
         this.controlPointsRandom2 = getControlPointsRandom(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
+
+        this.hasChanged = true;
     }
 
     setNumWindowsB(num) {
@@ -65,27 +68,47 @@ class Building {
         this.controlPoints1 = getControlPoints(this.numWindowsA, this.numWindowsB, this.windowSize);
         this.controlPointsRandom1 = getControlPointsRandom(this.numWindowsA, this.numWindowsB, this.windowSize);
         this.controlPoints2 = getControlPoints(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
-        this.controlPointsRandom2 = getControlPointsRandom(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);        
+        this.controlPointsRandom2 = getControlPointsRandom(this.numWindowsA-2, this.numWindowsB-2, this.windowSize);
+        
+        this.hasChanged = true;
     }
 
     setNumFloorsFirstSection(num) {
 
+        if(num == this.numFloorsFirstSection) {
+
+            return;
+        }
+
         this.numFloorsFirstSection = num;
+        this.hasChanged = true;
     }
 
     setNumFloorsSecondSection(num) {
 
+        if(num == this.numFloorsSecondSection) {
+
+            return;
+        }
+
         this.numFloorsSecondSection = num;
+        this.hasChanged = true;
     }
 
     setNumColumns(num) {
 
+        if(num == this.numColumns) {
+
+            return;
+        }
+
         this.numColumns = num;
+        this.hasChanged = true;
     }
 
     createFirstSectionFloor() {
 
-        this.firstSectionFloor = new Object3D();
+        var firstSectionFloor = new Object3D();
 
         var curve = new ClosedQuadraticBSpline();
         curve.setControlPoints(this.controlPointsRandom1);
@@ -93,7 +116,7 @@ class Building {
 
         var tile = new Tile(curve, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
 
-        this.firstSectionFloor.addChildren(tile);
+        firstSectionFloor.addChildren(tile);
 
         var windows = new Object3D();
         var windowColor = vec4.fromValues(0.7,0.7,0.6,1.0);
@@ -147,7 +170,6 @@ class Building {
 
             window.setRotation(xRotation*Math.PI/2, 0, zRotation*Math.PI/2);
 
-
             var posX = centerPosition[0];
             var posZ = centerPosition[2];
 
@@ -161,10 +183,9 @@ class Building {
             }
 
             windows.addChildren(window);
-
         }
 
-        this.firstSectionFloor.addChildren(windows);
+        firstSectionFloor.addChildren(windows);
 
         // add columns
 
@@ -187,13 +208,14 @@ class Building {
             columns.addChildren(column);
         }
 
-        this.firstSectionFloor.addChildren(columns);
+        firstSectionFloor.addChildren(columns);
 
+        return firstSectionFloor;
     }
 
     createSecondSectionFloor() {
 
-        this.secondSectionFloor = new Object3D();
+        var secondSectionFloor = new Object3D();
 
         var curve = new ClosedQuadraticBSpline();
         curve.setControlPoints(this.controlPointsRandom2);
@@ -201,7 +223,7 @@ class Building {
 
         var tile = new Tile(curve, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
 
-        this.secondSectionFloor.addChildren(tile);
+        secondSectionFloor.addChildren(tile);
 
         var windows = new Object3D();
         var windowColor = vec4.fromValues(0.7,0.7,0.6,1.0);
@@ -270,7 +292,7 @@ class Building {
             windows.addChildren(window);
         }
 
-        this.secondSectionFloor.addChildren(windows);
+        secondSectionFloor.addChildren(windows);
 
         // add columns
 
@@ -293,7 +315,9 @@ class Building {
             columns.addChildren(column);
         }
 
-        this.secondSectionFloor.addChildren(columns);
+        secondSectionFloor.addChildren(columns);
+
+        return secondSectionFloor;
     }
 
     getColumnsPositions(curve, deltaCurve, deltaNormal) {
@@ -321,6 +345,14 @@ class Building {
 
     draw() {
 
+        if(!(this.hasChanged)) {
+
+            this.objects.draw();
+            return;
+        }
+
+        this.objects = new Object3D();
+
         // 1°) dibujar base
         // 2°) dibujar pisos seccion 1
         // 3°) dibujar techo del último piso seccion 1
@@ -328,9 +360,6 @@ class Building {
         // 5°) dibujar techo del último piso seccion 2
         // 6°) dibujar ascensor
 
-        this.createFirstSectionFloor();
-        this.createSecondSectionFloor();
-        
         // paso 1: dibujar base
 
         var baseHeight = 3;
@@ -338,24 +367,21 @@ class Building {
         var baseWidthB = this.numWindowsB/2;
 
         var base = new Cube(2,2,baseHeight,vec4.fromValues(0.5,0.5,0.5,1));
-
-        var mBase = mat4.create();
-        mat4.fromTranslation(mBase, vec3.fromValues(0,baseHeight/2,0));
-        mat4.scale(mBase, mBase, vec3.fromValues(baseWidthA,1.0,baseWidthB));
-        base.draw(mBase);
+        base.setTranslation(0,baseHeight/2,0);
+        base.setScale(baseWidthA,1.0,baseWidthB);
+        this.objects.addChildren(base);
+        base.draw();
 
         var floorHeight = baseHeight;
 
         // paso 2: dibujar pisos seccion 1
 
-        var m1 = mat4.create();
-        
         for (let i = 0; i < this.numFloorsFirstSection; i++) {
             
-            var translation = vec3.fromValues(0,floorHeight,0);
-            mat4.fromTranslation(m1, translation);
-
-            this.firstSectionFloor.draw(m1);
+            var newFirstSectionFloor = this.createFirstSectionFloor();
+            newFirstSectionFloor.setTranslation(0,floorHeight,0);
+            this.objects.addChildren(newFirstSectionFloor);
+            newFirstSectionFloor.draw();
             floorHeight += 2;
         }
         
@@ -365,47 +391,44 @@ class Building {
         curve1.setCenterPoint(vec3.fromValues(0,0,0));
 
         var tile1 = new Tile(curve1, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
-        var translation = vec3.fromValues(0,floorHeight,0);
-        mat4.fromTranslation(m1, translation);
+        tile1.setTranslation(0,floorHeight,0);
         tile1.setScale(1.0,1.20,1.0); // make it 20% wider
-        tile1.draw(m1);
+        this.objects.addChildren(tile1);
+        tile1.draw();
 
         // paso 4: dibujar pisos seccion 2
-        var m2 = mat4.create();
-
-        var translation = vec3.fromValues(0,floorHeight,0);
-        mat4.fromTranslation(m2, translation);
         
         for (let i = 0; i < this.numFloorsSecondSection; i++) {
             
-            var translation = vec3.fromValues(0,floorHeight+0.05,0);
-            mat4.fromTranslation(m2, translation);
-            mat4.scale(m2, m2, vec3.fromValues(0.75,1.0,0.75));
-
-            this.secondSectionFloor.draw(m2);
-            floorHeight += 2.0;
+            var newSecondSectionFloor = this.createSecondSectionFloor();
+            newSecondSectionFloor.setTranslation(0,floorHeight,0);
+            this.objects.addChildren(newSecondSectionFloor);
+            newSecondSectionFloor.draw();
+            floorHeight += 2;
         }
         
         // paso 5: dibujar techo del último piso seccion 2
         var curve2 = new ClosedQuadraticBSpline();
         curve2.setControlPoints(this.controlPointsRandom2);
         curve2.setCenterPoint(vec3.fromValues(0,0,0));
-        var translation = vec3.fromValues(0,floorHeight,0);
-        mat4.fromTranslation(m2, translation);
-        mat4.scale(m2, m2, vec3.fromValues(0.75,1.0,0.75));
-        
 
         var tile2 = new Tile(curve2, vec2.fromValues(1.0,1.0), "texturas/StoneTilesFloor01_2K_BaseColor_resultado.jpg");
-        tile2.draw(m2);
-
+        
+        tile2.setTranslation(0,floorHeight,0);
+        //tile2.setScale(0.75,1.0,0.75);
+        
+        this.objects.addChildren(tile2);
+        tile2.draw();
 
         // paso 6: dibujar ascensor
         var lifterHeight = 2 + baseHeight + 2.0*(this.numFloorsFirstSection+this.numFloorsSecondSection);
         var lifterWidth = 3;
         var lifter = new Cube(2,2,1,vec4.fromValues(1.0,0.9882,0.9412,1));
-        var mLifter = mat4.create();
-        mat4.fromTranslation(mLifter, vec3.fromValues(0, lifterHeight/2,0));
-        mat4.scale(mLifter, mLifter, vec3.fromValues(lifterWidth,lifterHeight,lifterWidth));
-        lifter.draw(mLifter);
+        lifter.setTranslation(0, lifterHeight/2,0);
+        lifter.setScale(lifterWidth,lifterHeight,lifterWidth)
+        this.objects.addChildren(lifter);
+        lifter.draw();
+
+        this.hasChanged = false;
     }
 }

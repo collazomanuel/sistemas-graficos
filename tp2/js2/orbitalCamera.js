@@ -43,6 +43,27 @@ function OrbitalCameraControl(initialPos){
         }        
     });
 
+    document.addEventListener("wheel", function(e) {
+        
+        var wheelDelta = e.deltaY*vel*5;
+
+        if(wheelDelta < 0) {
+            
+            if(radius >= 10) {
+
+                radius += wheelDelta;
+            }
+        }
+
+        if(wheelDelta >= 0) {
+
+            if(radius <= 100) {
+
+                radius += wheelDelta; 
+            }
+        }
+    });
+
     this.update = function() {
                 
         let deltaX=0;

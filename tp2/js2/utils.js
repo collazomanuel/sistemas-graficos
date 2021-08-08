@@ -162,8 +162,6 @@ function setShaderMatrix(mMatrix, color, texture, isReflective, isTerrain) {
         var texture2 = loadTexture("texturas/Moss01_2K_BaseColor_resultado.jpg");
         var texture3 = loadTexture("texturas/SandyGravel02_2K_BaseColor_resultado.jpg");
 
-
-
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, texture1);
         gl.activeTexture(gl.TEXTURE2);
